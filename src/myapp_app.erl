@@ -22,6 +22,9 @@ stop(_State) ->
 -ifdef(TEST). %ifdef to prevent test-code compilation into ebin
 
 simple_test() ->
+    % the ok binding here is a common Erlang idiom which says the RHS must equal ok, else there will be a runtime error
+    % it is not a variable binding. Recall lower-case terms are atoms not
+    % variables. Variables start with upper-case characters, e.g. Ok
     ok = application:start(myapp),
     ?assertNot(undefined == whereis(myapp_sup)).
 -endif.
