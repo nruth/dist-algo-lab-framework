@@ -27,3 +27,21 @@ code in a running system, but it's out-of-scope here).
     Crash = crash_node:spawn_and_die_after(5000).
     spawn(fun() -> failure_detector:watch(Crash) end).
 
+
+
+Lab work:
+
+Take a look around these simple Erlang files, which will work concurrently
+and distributed (thanks to location transparency of Erlang PIDs), but do not
+follow the book, and likely have some problems. They will give you some
+ideas about the syntax, message passing, file structure, if you don't have already.
+
+Implement Chapter 2's Fair-loss Links, Stubborn Links, and Perfect Links.
+
+Create modules which will use the process registry in the Erlang VM (e.g. will
+register the fair-loss-links module as "fll"). Each of your VMs will register
+one of these modules (as in the book).
+
+These abstractions as in the book don't really fit in single-VM Erlang, so
+you will want to use 2 or more Erlang VMs and form the link between them.
+

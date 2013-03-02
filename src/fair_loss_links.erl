@@ -1,39 +1,23 @@
 -module(fair_loss_links).
--export([send/2, deliver/0]).
+-export([start/0, event_loop/0, send/2]).
 
-send(Q, M) ->
-  Q ! M.
+% register process receiving requests and indications at atom/pid fll
+start() ->
+  EventLoop = spawn(fair_loss_links, event_loop, []),
+  register(fll, EventLoop).
 
-deliver() ->
+
+% handle receipt of send requests and received remote msgs
+event_loop() ->
   receive
-    {{from, Sender}, Message} ->
-      {Sender, Message}
+    {request, fll, {send, Q, M}} ->
+      {fll, Q} ! {transmission, {from, node()}, M},
+      event_loop();
+    {transmission, {from, Sender}, M} ->
+      io:format("indication: ~w from ~w~n", [M, Sender]),
+      event_loop()
   end.
 
 
-%% events() ->
-%%   receive
-%%     {request, fll, {send, Q, M}} ->
-%%       Q ! M;
-%%
-%%     {indication, fll, {deliver, P, M}} ->
-%%       P ! M
-%%   end.
-
-
-%% send_request(Instance, Request) ->
-%%   Sender = self(),
-%%   case Request of
-%%     {send, Process, Msg} ->
-%%
-%%   end.
-%%
-%%   case Indication of
-%%     {deliver, Process, Msg} ->
-%%
-%%   end
-%%
-%% send(Process, Message) ->
-%%   Process ! {{from, self()}, Message}.
-%%
-
+send(Destination, Msg) ->
+  fll ! {request, fll, {send, Destination, Msg}}.
