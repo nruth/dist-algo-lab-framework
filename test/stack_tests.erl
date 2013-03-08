@@ -8,15 +8,22 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 stack_building_test_() ->
-  {foreach,
-    fun start/0,
-    fun stop/1,
-    [ fun stack_begin_empty_/1,
-      fun register_fll_base_module_/1,
-      fun dependency_launching/1
-    ]
+  { "building a stack and registering modules",
+    {foreach,
+      fun start/0,
+      fun stop/1,
+      [ fun stack_begin_empty_/1,
+        fun register_fll_base_module_/1,
+        fun dependency_launching/1
+      ]
+    }
   }.
 
+
+stop_stack_test_() ->
+{ "stopping the stack stops launched modules",
+  {setup, spawn, fun start/0, fun stop_stack_clears_bindings_/1}
+}.
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%% SETUP FUNCTIONS %%%
@@ -33,17 +40,16 @@ stop(_) ->
 %%% ACTUAL TESTS %%%
 %%%%%%%%%%%%%%%%%%%%
 
-
 stack_begin_empty_(_) ->
   {"new stack has no components",
     ?_assertEqual(sets:new(), stack:components())
   }.
 
 register_fll_base_module_(_) ->
-  {
-  "added component is registered",
+  { "added component is registered",
   fun () ->
     stack:launch_and_register_component(fll),
+    timer:sleep(10), % wait for messages to be processed
     ?assert(sets:is_element(fll, stack:components())),
     ?assertNotEqual(whereis(fll), undefined)
   end
@@ -53,17 +59,13 @@ dependency_launching(_) ->
   { "component dependencies are launched",
     fun() ->
       stack:launch_and_register_component(sl),
+      timer:sleep(10), % wait for messages to be processed
       ?assert(sets:is_element(fll, stack:components())),
       ?assertNotEqual(whereis(fll), undefined)
     end
   }.
 
-stop_stack_test_() ->
-  { "stopping the stack stops launched modules",
-    {setup, spawn, fun start/0, fun stop_stack/1}
-  }.
-
-stop_stack(_) ->
+stop_stack_clears_bindings_(_) ->
   fun() ->
     stack:launch_and_register_component(sl),
     timer:sleep(10), % wait for messages to be processed
