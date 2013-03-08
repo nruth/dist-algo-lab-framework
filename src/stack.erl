@@ -16,7 +16,7 @@ stop() ->
   receive
     {?MODULE, stopped} ->
       ok
-  after 1000 ->
+  after 500 ->
       erlang:error(failed_to_stop)
   end.
 
@@ -44,7 +44,7 @@ listen(LaunchedComponents) ->
   receive
     {register_component, Name} ->
       io:format('registering component ~w~n', [Name]),
-      NextComponents = launch_and_register_component_if_not_runnning(Name, LaunchedComponents),
+      NextComponents = launch_component_and_dependencies_if_missing(Name, LaunchedComponents),
       listen(NextComponents);
     {get_components, ReplyTo} ->
       ReplyTo ! {components, LaunchedComponents},
@@ -58,16 +58,26 @@ listen(LaunchedComponents) ->
 
 % launch component (and check dependencies) if not already running
 % returns updated launched component list
-launch_and_register_component_if_not_runnning(Component, LaunchedComponents) ->
+launch_component_and_dependencies_if_missing(Component, LaunchedComponents) ->
   case is_component_running(Component, LaunchedComponents) of
     false ->
-      launch_and_bind_component_if_not_runnning(Component, LaunchedComponents),
-      sets:add_element(Component, LaunchedComponents);
+      lists:foldl(
+        fun
+          (Dependency, Accum) ->
+            ok = launch_and_bind_component_if_not_runnning(Dependency, Accum),
+            sets:add_element(Dependency, Accum)
+        end,
+        LaunchedComponents,
+        [Component | dependencies(Component)]
+      );
 
     true ->
       % already launched, do nothing
       LaunchedComponents
   end.
+
+dependencies(Component) ->
+  apply(Component, dependencies, []).
 
 % call component's start&bind function
 launch_and_bind_component_if_not_runnning(Name, LaunchedComponents) ->
