@@ -11,7 +11,10 @@ stack_building_test_() ->
   {foreach,
     fun start/0,
     fun stop/1,
-    [fun stack_begin_empty_/1, fun register_fll_base_module_/1, fun dependency_launching/1]
+    [ fun stack_begin_empty_/1,
+      fun register_fll_base_module_/1,
+      fun dependency_launching/1
+    ]
   }.
 
 
@@ -54,6 +57,22 @@ dependency_launching(_) ->
       ?assertNotEqual(whereis(fll), undefined)
     end
   }.
+
+stop_stack_test_() ->
+  { "stopping the stack stops launched modules",
+    {setup, spawn, fun start/0, fun stop_stack/1}
+  }.
+
+stop_stack(_) ->
+  fun() ->
+    stack:launch_and_register_component(sl),
+    timer:sleep(10), % wait for messages to be processed
+    ?assertNotEqual(whereis(sl), undefined),
+    ?assertNotEqual(whereis(fll), undefined),
+    stack:stop(),
+    ?assertEqual(whereis(sl), undefined),
+    ?assertEqual(whereis(fll), undefined)
+  end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% HELPER FUNCTIONS %%%
