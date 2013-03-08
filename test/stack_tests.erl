@@ -25,6 +25,15 @@ stop_stack_test_() ->
   {setup, spawn, fun start/0, fun stop_stack_clears_bindings_/1}
 }.
 
+upper_layer_queries_test_() ->
+  {"querying structural information on the stack, e.g. upper layers",
+    {foreach,
+      fun start/0,
+      fun stop/1,
+      [ fun sl_above_fll/1  ]
+    }
+  }.
+
 %%%%%%%%%%%%%%%%%%%%%%%
 %%% SETUP FUNCTIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -74,6 +83,13 @@ stop_stack_clears_bindings_(_) ->
     stack:stop(),
     ?assertEqual(whereis(sl), undefined),
     ?assertEqual(whereis(fll), undefined)
+  end.
+
+sl_above_fll(_) ->
+  fun() ->
+    stack:launch_and_register_component(sl),
+    timer:sleep(10), % wait for messages to be processed
+    ?assertEqual([sl], stack:get_parents(fll))
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%

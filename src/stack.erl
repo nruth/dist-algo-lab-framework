@@ -1,5 +1,5 @@
 -module(stack).
--export([start/0, stop/0, init/0, launch_and_register_component/1, components/0]).
+-export([start/0, stop/0, init/0, launch_and_register_component/1, components/0, get_parents/1]).
 
 -ifdef(TEST). %ifdef to prevent test-code compilation into ebin
 -include_lib("eunit/include/eunit.hrl").
@@ -22,7 +22,7 @@ stop() ->
 
 % entry-point for newly spawned stack process
 init() ->
-  listen(sets:new()).
+  listen(sets:new(), dict:new()).
 
 % register a component in the stack and launch its dependencies
 launch_and_register_component(Name) ->
@@ -36,19 +36,31 @@ components() ->
       Components
   end.
 
+get_parents(Component) ->
+  ?MODULE ! {get_parents, self(), Component},
+  receive
+    {parents, Components} ->
+      Components
+  end.
 
 
 %% internals
 
-listen(LaunchedComponents) ->
+listen(LaunchedComponents, Parents) ->
   receive
     {register_component, Name} ->
-      io:format('registering component ~w~n', [Name]),
       NextComponents = launch_component_and_dependencies_if_missing(Name, LaunchedComponents),
-      listen(NextComponents);
+      NextParents = register_as_parent(Name, dependencies(Name), Parents),
+      listen(NextComponents, NextParents);
+
     {get_components, ReplyTo} ->
       ReplyTo ! {components, LaunchedComponents},
-      listen(LaunchedComponents);
+      listen(LaunchedComponents, Parents);
+
+    {get_parents, ReplyTo, Component} ->
+      ReplyTo ! {parents, dict:fetch(Component, Parents)},
+      listen(LaunchedComponents, Parents);
+
     {stop, ReplyTo} ->
       % halt all launched components, then halt and unregister self
       lists:map(fun(Component) -> apply(Component, stop, []) end, sets:to_list(LaunchedComponents)),
@@ -75,6 +87,30 @@ launch_component_and_dependencies_if_missing(Component, LaunchedComponents) ->
       % already launched, do nothing
       LaunchedComponents
   end.
+
+
+register_as_parent(Component, Children, Parents) ->
+  lists:foldl(
+    fun(Child, Accum) ->
+      dict:append(Child, Component, Accum)
+    end, Parents, Children
+  ).
+
+-ifdef(TEST). %ifdef to prevent test-code compilation into ebin
+
+register_as_parent_test() ->
+  Actual = dict:to_list(register_as_parent(p, [b, c], dict:new())),
+  Expected = dict:to_list(dict:store(c, [p], (dict:store(b, [p], dict:new())))),
+  ?assertEqual(Expected, Actual).
+
+register_multiple_parents_test() ->
+  Actual = dict:to_list(register_as_parent(q, [b, c], register_as_parent(p, [b, c], dict:new()))),
+  Expected = dict:to_list(dict:store(c, [p, q], (dict:store(b, [p, q], dict:new())))),
+  ?assertEqual(Expected, Actual).
+
+-endif.
+
+
 
 dependencies(Component) ->
   apply(Component, dependencies, []).
