@@ -1,5 +1,7 @@
 -module(stack).
--export([start/0, stop/0, init/0, launch_and_register_component/1, components/0, get_parents/1]).
+-export([start/0, stop/0, init/0, launch_and_register_component/1,
+components/0, get_subscribers/1, subscribe_to_events/2, event/3
+]).
 
 -ifdef(TEST). %ifdef to prevent test-code compilation into ebin
 -include_lib("eunit/include/eunit.hrl").
@@ -36,13 +38,25 @@ components() ->
       Components
   end.
 
-get_parents(Component) ->
-  ?MODULE ! {get_parents, self(), Component},
+get_subscribers(Component) ->
+  ?MODULE ! {get_subscribers, self(), Component},
   receive
-    {parents, Components} ->
+    {subscribers, Components} ->
       Components
   end.
 
+
+event(Module, indication, Event) ->
+  relay_event({Module, indication, Event}, get_subscribers(Module));
+event(Module, request, Event) ->
+  relay_event({Module, request, Event}, get_subscribers(Module)).
+
+subscribe_to_events(Component, Subscriber) ->
+  ?MODULE ! {subscribe_events, Subscriber, Component, self()},
+  receive
+    {subscribed, ok} ->
+      ok
+  end.
 
 %% internals
 
@@ -50,15 +64,20 @@ listen(LaunchedComponents, Parents) ->
   receive
     {register_component, Name} ->
       NextComponents = launch_component_and_dependencies_if_missing(Name, LaunchedComponents),
-      NextParents = register_as_parent(Name, dependencies(Name), Parents),
+      NextParents = add_subscribers(Name, dependencies(Name), Parents),
       listen(NextComponents, NextParents);
+
+    {subscribe_events, Subscriber, Component, AckTo} ->
+      NextParents = add_subscribers(Component, [Subscriber], Parents),
+      AckTo ! {subscribed, ok},
+      listen(LaunchedComponents, NextParents);
 
     {get_components, ReplyTo} ->
       ReplyTo ! {components, LaunchedComponents},
       listen(LaunchedComponents, Parents);
 
-    {get_parents, ReplyTo, Component} ->
-      ReplyTo ! {parents, dict:fetch(Component, Parents)},
+    {get_subscribers, ReplyTo, Component} ->
+      ReplyTo ! {subscribers, dict:fetch(Component, Parents)},
       listen(LaunchedComponents, Parents);
 
     {stop, ReplyTo} ->
@@ -88,23 +107,27 @@ launch_component_and_dependencies_if_missing(Component, LaunchedComponents) ->
       LaunchedComponents
   end.
 
-
-register_as_parent(Component, Children, Parents) ->
+add_subscribers(Component, Children, Parents) ->
+  %% ?debugFmt('subscribing ~w to ~w with prior ~w', [Children, Component, Parents]),
   lists:foldl(
     fun(Child, Accum) ->
       dict:append(Child, Component, Accum)
     end, Parents, Children
   ).
 
+
 -ifdef(TEST). %ifdef to prevent test-code compilation into ebin
 
-register_as_parent_test() ->
-  Actual = dict:to_list(register_as_parent(p, [b, c], dict:new())),
+
+
+
+add_subscribers_test() ->
+  Actual = dict:to_list(add_subscribers(p, [b, c], dict:new())),
   Expected = dict:to_list(dict:store(c, [p], (dict:store(b, [p], dict:new())))),
   ?assertEqual(Expected, Actual).
 
-register_multiple_parents_test() ->
-  Actual = dict:to_list(register_as_parent(q, [b, c], register_as_parent(p, [b, c], dict:new()))),
+add_multiple_subscribers_test() ->
+  Actual = dict:to_list(add_subscribers(q, [b, c], add_subscribers(p, [b, c], dict:new()))),
   Expected = dict:to_list(dict:store(c, [p, q], (dict:store(b, [p, q], dict:new())))),
   ?assertEqual(Expected, Actual).
 
@@ -127,3 +150,23 @@ launch_and_bind_component_if_not_runnning(Name, LaunchedComponents) ->
 
 is_component_running(Component, LaunchedComponents) ->
   sets:is_element(Component, LaunchedComponents).
+
+
+relay_event(Event, Receivers) ->
+  %% ?debugFmt('relaying ~w to ~w~n', [Event, Receivers]),
+  lists:map(fun
+    (Receiver) ->
+      Receiver ! Event
+  end, Receivers).
+
+
+-ifdef(TEST). %ifdef to prevent test-code compilation into ebin
+
+relay_event_test() ->
+  Spy1 = nspy:mock(),
+  Spy2 = nspy:mock(),
+  relay_event(arbitrary_terms, [Spy1, Spy2]),
+  nspy:assert_message_received(Spy1, arbitrary_terms),
+  nspy:assert_message_received(Spy2, arbitrary_terms).
+
+-endif.

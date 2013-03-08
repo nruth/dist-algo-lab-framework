@@ -2,8 +2,16 @@
 -module(fll).
 -export([dependencies/0, start/0, stop/0, event_loop/0, send/2]).
 
+-ifdef(TEST). %ifdef to prevent test-code compilation into ebin
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
 dependencies() ->
   [].
+
+send(Destination, Msg) ->
+  %% ?debugFmt('~nsending ~w to ~w~n', [Msg, Destination]),
+  ?MODULE ! {request, ?MODULE, {send, Destination, Msg}}.
 
 
 % register process receiving requests and indications at atom/pid fll
@@ -24,17 +32,17 @@ stop() ->
 event_loop() ->
   receive
     {request, ?MODULE, {send, Q, M}} ->
+      %% ?debugFmt('~nsending ~w to ~w~n', [M, Q]),
       {?MODULE, Q} ! {transmission, {from, node()}, M},
       event_loop();
+
     {transmission, {from, Sender}, M} ->
-      io:format("indication: ~w from ~w~n", [M, Sender]),
+      io:format("transmission: ~w from ~w~n", [M, Sender]),
+      stack:event(?MODULE, indication, {msg, M, Sender}),
       event_loop();
+
     {stop, ReplyTo} ->
       % halt and unregister self
       true = unregister(?MODULE),
       ReplyTo ! {?MODULE, stopped}
   end.
-
-
-send(Destination, Msg) ->
-  ?MODULE ! {request, ?MODULE, {send, Destination, Msg}}.

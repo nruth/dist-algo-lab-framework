@@ -9,7 +9,7 @@
 
 stack_building_test_() ->
   { "building a stack and registering modules",
-    {foreach,
+    {foreach, spawn,
       fun start/0,
       fun stop/1,
       [ fun stack_begin_empty_/1,
@@ -27,10 +27,13 @@ stop_stack_test_() ->
 
 upper_layer_queries_test_() ->
   {"querying structural information on the stack, e.g. upper layers",
-    {foreach,
+    {foreach, spawn,
       fun start/0,
       fun stop/1,
-      [ fun sl_above_fll/1  ]
+      [
+        fun sl_above_fll/1
+        %% , fun subscribe_to_events/1
+      ]
     }
   }.
 
@@ -89,7 +92,18 @@ sl_above_fll(_) ->
   fun() ->
     stack:launch_and_register_component(sl),
     timer:sleep(10), % wait for messages to be processed
-    ?assertEqual([sl], stack:get_parents(fll))
+    ?assertEqual([sl], stack:get_subscribers(fll))
+  end.
+
+subscribe_to_events(_) ->
+  fun() ->
+    stack:launch_and_register_component(fll),
+    timer:sleep(10), % wait for messages to be processed
+    A = nspy:mock(),
+    stack:subscribe_to_events(fll, A),
+    ?assertEqual([A], stack:get_subscribers(fll)),
+    stack:event(fll, indication, event),
+    nspy:assert_message_received(A, {fll, indication, event})
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%
