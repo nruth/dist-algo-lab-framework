@@ -42,7 +42,6 @@ event_loop() ->
       event_loop();
 
     {stop, ReplyTo} ->
-      % halt and unregister self
-      true = unregister(?MODULE),
+      % halt, deregistration of process name is implicit
       ReplyTo ! {?MODULE, stopped}
   end.

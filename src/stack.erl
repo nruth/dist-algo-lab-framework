@@ -81,9 +81,8 @@ listen(LaunchedComponents, Parents) ->
       listen(LaunchedComponents, Parents);
 
     {stop, ReplyTo} ->
-      % halt all launched components, then halt and unregister self
+      % halt all launched components, then halt self
       lists:map(fun(Component) -> apply(Component, stop, []) end, sets:to_list(LaunchedComponents)),
-      true = unregister(?MODULE),
       ReplyTo ! {?MODULE, stopped}
   end.
 
