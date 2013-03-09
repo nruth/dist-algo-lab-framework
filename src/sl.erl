@@ -1,14 +1,14 @@
 % fair loss links
 -module(sl).
--export([dependencies/0, start/0, stop/0, event_loop/0, send/2]).
+-export([dependencies/0, start_link/0, stop/0, event_loop/0, send/2]).
 
 dependencies() ->
   [fll].
 
 
 % register process receiving requests and indications at atom/pid fll
-start() ->
-  register(?MODULE, spawn(?MODULE, event_loop, [])).
+start_link() ->
+  register(?MODULE, spawn_link(?MODULE, event_loop, [])).
 
 
 stop() ->

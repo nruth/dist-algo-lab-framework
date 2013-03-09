@@ -166,7 +166,7 @@ dependencies(Component) ->
 launch_and_bind_component_if_not_runnning(Name, LaunchedComponents) ->
   case is_component_running(Name, LaunchedComponents) of
     false ->
-      apply(Name, start, []),
+      apply(Name, start_link, []),
       ok;
     true ->
       ok

@@ -1,6 +1,6 @@
 % fair loss links
 -module(fll).
--export([dependencies/0, start/0, stop/0, event_loop/0, send/2]).
+-export([dependencies/0, start_link/0, stop/0, event_loop/0, send/2]).
 
 -ifdef(TEST). %ifdef to prevent test-code compilation into ebin
 -include_lib("eunit/include/eunit.hrl").
@@ -15,8 +15,8 @@ send(Destination, Msg) ->
 
 
 % register process receiving requests and indications at atom/pid fll
-start() ->
-  register(?MODULE, spawn(?MODULE, event_loop, [])).
+start_link() ->
+  register(?MODULE, spawn_link(?MODULE, event_loop, [])).
 
 stop() ->
   ?MODULE ! {stop, self()},
