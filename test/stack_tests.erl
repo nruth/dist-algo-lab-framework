@@ -61,7 +61,6 @@ register_fll_base_module_(_) ->
   { "added component is registered",
   fun () ->
     stack:launch_and_register_component(fll),
-    timer:sleep(10), % wait for messages to be processed
     ?assert(sets:is_element(fll, stack:components())),
     ?assertNotEqual(whereis(fll), undefined)
   end
@@ -71,7 +70,6 @@ dependency_launching(_) ->
   { "component dependencies are launched",
     fun() ->
       stack:launch_and_register_component(sl),
-      timer:sleep(10), % wait for messages to be processed
       ?assert(sets:is_element(fll, stack:components())),
       ?assertNotEqual(whereis(fll), undefined)
     end
@@ -80,7 +78,6 @@ dependency_launching(_) ->
 stop_stack_clears_bindings_(_) ->
   fun() ->
     stack:launch_and_register_component(sl),
-    timer:sleep(10), % wait for messages to be processed
     ?assertNotEqual(whereis(sl), undefined),
     ?assertNotEqual(whereis(fll), undefined),
     stack:stop(),
@@ -91,14 +88,12 @@ stop_stack_clears_bindings_(_) ->
 sl_above_fll(_) ->
   fun() ->
     stack:launch_and_register_component(sl),
-    timer:sleep(10), % wait for messages to be processed
     ?assertEqual([sl], stack:get_subscribers(fll))
   end.
 
 subscribe_to_events(_) ->
   fun() ->
     stack:launch_and_register_component(fll),
-    timer:sleep(10), % wait for messages to be processed
     A = nspy:mock(),
     stack:subscribe_to_events(fll, A),
     ?assertEqual([A], stack:get_subscribers(fll)),
