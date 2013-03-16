@@ -53,6 +53,6 @@ loop(State) ->
       loop(State);
 
     UnknownMsg ->
-      io:format("~w Unknown message: ~w~n", [?MODULE, UnknownMsg]),
+      io:format("~w Ignoring message: ~w~n", [?MODULE, UnknownMsg]),
       loop(State)
   end.

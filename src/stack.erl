@@ -4,7 +4,7 @@
 
 -export([
 start_link/0, stop/0,
-add_component/1, query_components/0, trigger/1,
+add_component/1, query_components/0, trigger/1, transmit/2,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
@@ -23,7 +23,7 @@ add_component(Name) ->
 
 % notify the stack (components) of an event
 trigger(Event) ->
-  gen_server:call(?MODULE, {trigger, Event}).
+  gen_server:cast(?MODULE, {trigger, Event}).
 
 
 % shut down the stack and any launched components
@@ -36,7 +36,12 @@ query_components() ->
   {components, Components} = gen_server:call(?MODULE, get_components),
   Components.
 
-
+% send a message to the registered process "stack" on a remote node
+% DestinationNodeQ: node() or similar (e.g. ip address)
+% Msg : erlang term
+transmit(DestinationNodeQ, Msg) ->
+  io:format('Transmitting ~w to node ~w~n', [Msg, DestinationNodeQ]),
+  gen_server:cast({stack, DestinationNodeQ}, {transmission, {from, node()}, Msg}).
 
 
 %% gen_server callbacks ===================================================
@@ -61,17 +66,10 @@ handle_call({register_component, Name}, _From, State) ->
   ),
   {reply, {registered, Name}, State#state{components=NextComponents}};
 
+
 % return active stack components
 handle_call(get_components, _From, State) ->
   {reply, {components, State#state.components}, State};
-
-% relay event to other components
-handle_call({trigger, Event}, _From, State) ->
-  lists:map(
-    fun (Receiver) -> Receiver ! {event, Event} end,
-    State#state.components
-  ),
-  {reply, ok, State};
 
 % shut down the stack
 handle_call(stop, _From, State) ->
@@ -79,10 +77,21 @@ handle_call(stop, _From, State) ->
 
 
 %% non-blocking async messages
-% not used internally, halt if received
+
+% relay event to other components
+handle_cast({trigger, Event}, State) ->
+  lists:map(
+    fun (Receiver) -> Receiver ! {event, Event} end,
+    State#state.components
+  ),
+  {noreply, State};
+
+handle_cast({transmission, {from, SenderP}, Msg}, State) ->
+  io:format("transmission: ~w from ~w~n", [Msg, SenderP]),
+  stack:trigger({fll, deliver, SenderP, Msg}),  
+  {noreply, State};
 handle_cast(Request, State) ->
   {stop, {unexpected_message, Request}, State}.
-
 
 handle_info(Msg, State) ->
   io:format("Unexpected message: ~p~n",[Msg]),
