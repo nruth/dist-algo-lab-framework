@@ -1,37 +1,58 @@
-% fair loss links
+% stubborn link
 -module(sl).
--export([dependencies/0, start_link/0, stop/0, event_loop/0, send/2]).
 
-dependencies() ->
-  [fll].
+-record(state, {sent}).
 
+-export([
+  init/0, start_link/0, uses/0, stop/0
+]).
 
-% register process receiving requests and indications at atom/pid fll
 start_link() ->
-  register(?MODULE, spawn_link(?MODULE, event_loop, [])).
-
+  register(?MODULE,
+    spawn_link(?MODULE, init, [])
+  ).
 
 stop() ->
-  ?MODULE ! {stop, self()},
+  ?MODULE ! stop.
+
+uses() ->
+  [fll].
+
+init() ->
+  starttimer(500),
+  State = #state{sent=sets:new()},
+  loop(State).
+
+starttimer(Delta) ->
+  timer:send_interval(Delta, timeout).
+
+loop(State) ->
+  % read the first message from the postbox, or wait for it to arrive
   receive
-    {?MODULE, stopped} ->
-      ok
-  after 400 ->
-      erlang:error(failed_to_stop)
+    {event, {sl, send, Q, M}} ->
+      % tell fll to send the message, and add it to the sent list for retransmission
+      stack:trigger({fll, send, Q, M}),
+      UpdatedSent = sets:add_element({Q, M}, State#state.sent),
+      loop(State#state{sent=UpdatedSent});
+
+    {event, {fll, deliver, P, M }} ->
+      % indicate to the stack that sl has delivered the message
+      stack:trigger({sl, deliver, P, M}),
+      loop(State);
+
+    stop ->
+      ok;
+
+    timeout ->
+      % re-send each sent message to fll
+      sets:fold(
+        fun ({Q, M}, _Accum) -> stack:trigger({fll, send, Q, M}) end,
+        nil,
+        State#state.sent
+      ),
+      loop(State);
+
+    UnknownMsg ->
+      io:format("~w Unknown message: ~w~n", [?MODULE, UnknownMsg]),
+      loop(State)
   end.
-
-
-% handle receipt of send requests and received remote msgs
-event_loop() ->
-  receive
-    {request, ?MODULE, {send, Q, M}} ->
-      fll:send(Q, M),
-      event_loop();
-    {stop, ReplyTo} ->
-      % halt, deregistration of process name is implicit
-      ReplyTo ! {?MODULE, stopped}
-  end.
-
-
-send(Destination, Msg) ->
-  ?MODULE ! {request, ?MODULE, {send, Destination, Msg}}.

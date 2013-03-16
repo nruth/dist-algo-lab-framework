@@ -1,47 +1,59 @@
-% fair loss links
+% fair loss link
 -module(fll).
--export([dependencies/0, start_link/0, stop/0, event_loop/0, send/2]).
+-include_lib("fll_state.hrl").
+-behaviour(gen_server).
 
--ifdef(TEST). %ifdef to prevent test-code compilation into ebin
--include_lib("eunit/include/eunit.hrl").
--endif.
+-export([
+uses/0, upon_event/2, start_link/0, stop/0,
+init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
+]).
 
-dependencies() ->
+%% SPECIFIC
+
+uses() ->
   [].
 
-send(Destination, Msg) ->
-  %% ?debugFmt('~nsending ~w to ~w~n', [Msg, Destination]),
-  ?MODULE ! {request, ?MODULE, {send, Destination, Msg}}.
+upon_event({request, ?MODULE, {send, Q, M}}, State) ->
+  %% ?debugFmt('~nsending ~w to ~w~n', [M, Q]),
+  {?MODULE, Q} ! {transmission, {from, node()}, M},
+  State.
 
 
-% register process receiving requests and indications at atom/pid fll
+%% GENERIC
+
+init([]) ->
+  {ok, #state{}}.
+
 start_link() ->
-  register(?MODULE, spawn_link(?MODULE, event_loop, [])).
+  %% http://erldocs.com/R15B/stdlib/gen_server.html#start_link/4
+  gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 stop() ->
-  ?MODULE ! {stop, self()},
-  receive
-    {?MODULE, stopped} ->
-      ok
-  after 400 ->
-      erlang:error(failed_to_stop)
-  end.
+  gen_server:call(?MODULE, stop).
+
+handle_info({event, Event}, State) ->
+  {noreply, upon_event(Event, State)};
+
+handle_info(Msg, State) ->
+  io:format("Unexpected message: ~p~n",[Msg]),
+  {noreply, State}.
 
 
-% handle receipt of send requests and received remote msgs
-event_loop() ->
-  receive
-    {request, ?MODULE, {send, Q, M}} ->
-      %% ?debugFmt('~nsending ~w to ~w~n', [M, Q]),
-      {?MODULE, Q} ! {transmission, {from, node()}, M},
-      event_loop();
+handle_cast({transmission, {from, Sender}, M}, State) ->
+  io:format("transmission: ~w from ~w~n", [M, Sender]),
+  stack:trigger({?MODULE, indication, {msg, M, Sender}}),
+  {noreply, State}.
 
-    {transmission, {from, Sender}, M} ->
-      io:format("transmission: ~w from ~w~n", [M, Sender]),
-      stack:event(?MODULE, indication, {msg, M, Sender}),
-      event_loop();
+handle_call(stop, _From, State) ->
+  {stop, normal, ok, State};
+handle_call(Request, From, State) ->
+  {stop, {unexpected_message, Request, From}, State}.
 
-    {stop, ReplyTo} ->
-      % halt, deregistration of process name is implicit
-      ReplyTo ! {?MODULE, stopped}
-  end.
+code_change(_OldVsn, State, _Extra) ->
+  %% No change planned. The function is there for the behaviour,
+  %% but will not be used. Only a version on the next
+  {ok, State}.
+
+
+terminate(normal, _State) ->
+  ok.
