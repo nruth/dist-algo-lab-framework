@@ -8,23 +8,27 @@ add_component/1, query_components/0, trigger/1,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
--ifdef(TEST). %ifdef to prevent test-code compilation into ebin
--include_lib("eunit/include/eunit.hrl").
--endif.
-
-
 %% API  ===================================================
 
+% launch the stack
 start_link() ->
   %% http://erldocs.com/R15B/stdlib/gen_server.html#start_link/4
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-stop() ->
-  gen_server:call(?MODULE, stop).
 
 % register a component in the stack and launch its dependencies
 add_component(Name) ->
   gen_server:call(?MODULE, {register_component, Name}).
+
+
+% notify the stack (components) of an event
+trigger(Event) ->
+  gen_server:call(?MODULE, {trigger, Event}).
+
+
+% shut down the stack and any launched components
+stop() ->
+  gen_server:call(?MODULE, stop).
 
 
 % returns the currently registered components
@@ -33,8 +37,7 @@ query_components() ->
   Components.
 
 
-trigger(Event) ->
-  gen_server:call(?MODULE, {trigger, Event}).
+
 
 %% gen_server callbacks ===================================================
 
