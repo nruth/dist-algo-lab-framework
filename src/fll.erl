@@ -17,8 +17,11 @@ stop() ->
 upon_event({fll, send, DestinationNodeQ, Msg}, State) ->
   stack:transmit(DestinationNodeQ, Msg),
   State;
+
 upon_event({fll, deliver, SenderNodeQ, Msg}, State) ->
   io:format("fll received message: ~w from ~w~n", [Msg, SenderNodeQ]),
   State;
-upon_event(_Other, State) ->
+
+upon_event(Other, State) ->
+  io:format("~w ignoring event ~w~n", [?MODULE, Other]),
   State.

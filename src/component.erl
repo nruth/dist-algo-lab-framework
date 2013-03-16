@@ -7,11 +7,13 @@ init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
 -record(state, {
-  component
+  component,
+  component_state=nil
 }).
 
 
 init([Component]) ->
+  Component ! init,
   {ok, #state{component=Component}}.
 
 
@@ -24,13 +26,10 @@ stop(Component) ->
   gen_server:call(Component, stop).
 
 
-handle_info({event, Event}, State) ->
+handle_info(Event, State) ->
   % (dynamically) call the component's event handler
-  NewState = apply(State#state.component, upon_event, [Event, State]),
-  {noreply, NewState};
-handle_info(Msg, State) ->
-  io:format("Unexpected message: ~p~n",[Msg]),
-  {noreply, State}.
+  NewComponentState = apply(State#state.component, upon_event, [Event, State#state.component_state]),
+  {noreply, State#state{component_state=NewComponentState}}.
 
 
 handle_cast(Request, State) ->

@@ -81,14 +81,14 @@ handle_call(stop, _From, State) ->
 % relay event to other components
 handle_cast({trigger, Event}, State) ->
   lists:map(
-    fun (Receiver) -> Receiver ! {event, Event} end,
+    fun (Receiver) -> Receiver ! Event end,
     State#state.components
   ),
   {noreply, State};
 
 handle_cast({transmission, {from, SenderP}, Msg}, State) ->
   io:format("transmission: ~w from ~w~n", [Msg, SenderP]),
-  stack:trigger({fll, deliver, SenderP, Msg}),  
+  stack:trigger({fll, deliver, SenderP, Msg}),
   {noreply, State};
 handle_cast(Request, State) ->
   {stop, {unexpected_message, Request}, State}.

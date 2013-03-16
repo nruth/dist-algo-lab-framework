@@ -1,58 +1,44 @@
 % stubborn link
 -module(sl).
-
+-export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
 -record(state, {sent}).
 
--export([
-  init/0, start_link/0, uses/0, stop/0
-]).
+uses() -> [fll].
 
 start_link() ->
-  register(?MODULE,
-    spawn_link(?MODULE, init, [])
-  ).
+  component:start_link(?MODULE).
 
 stop() ->
-  ?MODULE ! stop.
+  component:stop(?MODULE).
 
-uses() ->
-  [fll].
 
-init() ->
-  starttimer(500),
-  State = #state{sent=sets:new()},
-  loop(State).
+upon_event(init, _) ->
+  start_timer(500),
+  #state{sent=sets:new()};
 
-starttimer(Delta) ->
+upon_event(timeout, State) ->
+  % re-send each sent message to fll
+  sets:fold(
+    fun ({Q, M}, _Accum) -> stack:trigger({fll, send, Q, M}) end,
+    nil,
+    State#state.sent
+  ),
+  State;
+
+upon_event({sl, send, DestinationNodeQ, Msg}, State) ->
+  % tell fll to send the message, and add it to the sent list for retransmission
+  stack:trigger({fll, send, DestinationNodeQ, Msg}),
+  State#state{sent = sets:add_element({DestinationNodeQ, Msg}, State#state.sent)};
+
+upon_event({fll, deliver, SenderNodeP, Msg}, State) ->
+  % indicate to the stack that sl has delivered the message
+  stack:trigger({sl, deliver, SenderNodeP, Msg}),
+  State;
+
+upon_event(Other, State) ->
+  io:format("~w ignoring event ~w~n", [?MODULE, Other]),
+  State.
+
+
+start_timer(Delta) ->
   timer:send_interval(Delta, timeout).
-
-loop(State) ->
-  % read the first message from the postbox, or wait for it to arrive
-  receive
-    {event, {sl, send, Q, M}} ->
-      % tell fll to send the message, and add it to the sent list for retransmission
-      stack:trigger({fll, send, Q, M}),
-      UpdatedSent = sets:add_element({Q, M}, State#state.sent),
-      loop(State#state{sent=UpdatedSent});
-
-    {event, {fll, deliver, P, M }} ->
-      % indicate to the stack that sl has delivered the message
-      stack:trigger({sl, deliver, P, M}),
-      loop(State);
-
-    stop ->
-      ok;
-
-    timeout ->
-      % re-send each sent message to fll
-      sets:fold(
-        fun ({Q, M}, _Accum) -> stack:trigger({fll, send, Q, M}) end,
-        nil,
-        State#state.sent
-      ),
-      loop(State);
-
-    UnknownMsg ->
-      io:format("~w Ignoring message: ~w~n", [?MODULE, UnknownMsg]),
-      loop(State)
-  end.
