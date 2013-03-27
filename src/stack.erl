@@ -4,7 +4,7 @@
 
 -export([
 start_link/0, stop/0,
-add_component/1, query_components/0, trigger/1, transmit/2,
+add_component/1, query_components/0, trigger/1, trigger_one_receiver/2, transmit/2,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
@@ -23,8 +23,13 @@ add_component(Name) ->
 
 % notify the stack (components) of an event
 trigger(Event) ->
+  % ask stack to broadcast to all known components for us
   gen_server:cast(?MODULE, {trigger, Event}).
 
+% notify a single module of an event (e.g. timeout callback to self)
+trigger_one_receiver(Destination, Event) ->
+  % send ourselves
+  send_event(Destination, Event).
 
 % shut down the stack and any launched components
 stop() ->
@@ -81,7 +86,7 @@ handle_call(stop, _From, State) ->
 % relay event to other components
 handle_cast({trigger, Event}, State) ->
   lists:map(
-    fun (Receiver) -> Receiver ! {event, Event} end,
+    fun (Receiver) -> send_event(Receiver, Event) end,
     State#state.components
   ),
   {noreply, State};
@@ -141,3 +146,7 @@ uses(Component) ->
 
 is_component_running(Component) ->
    undefined =/= whereis(Component).
+
+% dispatch event to one receiver
+send_event(Receiver, Event) ->
+  Receiver ! {event, Event}.

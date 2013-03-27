@@ -39,6 +39,5 @@ upon_event(Other, State) ->
   io:format("~w ignoring event ~w~n", [?MODULE, Other]),
   State.
 
-
 start_timer(Delta) ->
-  timer:send_interval(Delta, timeout).
+  timer:apply_interval(Delta, stack, trigger_one_receiver, [sl, {sl, timeout}]).
