@@ -21,9 +21,9 @@ upon_event(init, State) ->
   random:seed({A,B,C}),
   State;
 
-upon_event({fll, deliver, SenderNodeQ, Msg}, State) ->
-  io:format("fll received message: ~w from ~w~n", [Msg, SenderNodeQ]),
-  State;
+%% upon_event({fll, deliver, SenderNodeQ, Msg}, State) ->
+  %% io:format("fll received message: ~w from ~w~n", [Msg, SenderNodeQ]),
+  %% State;
 
 upon_event({fll, send, DestinationNodeQ, Msg}, State) ->
   case random:uniform(10) of
@@ -31,6 +31,7 @@ upon_event({fll, send, DestinationNodeQ, Msg}, State) ->
       io:format("fll dropping message~n");
     2 ->
       % send with delay
+      io:format("fll delaying message~n"),
       timer:apply_after(random:uniform(500), stack, transmit, [DestinationNodeQ, Msg]);
     _ ->
       stack:transmit(DestinationNodeQ, Msg)

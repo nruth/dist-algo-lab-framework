@@ -49,7 +49,7 @@ query_components() ->
 % DestinationNodeQ: node() or similar (e.g. ip address)
 % Msg : erlang term
 transmit(DestinationNodeQ, Msg) ->
-  io:format('Transmitting ~w to node ~w~n', [Msg, DestinationNodeQ]),
+  %% io:format('Transmitting ~w to node ~w~n', [Msg, DestinationNodeQ]),
   gen_server:cast({stack, DestinationNodeQ}, {transmission, {from, node()}, Msg}).
 
 
@@ -96,7 +96,7 @@ handle_cast({trigger, Event}, State) ->
   {noreply, State};
 
 handle_cast({transmission, {from, SenderP}, Msg}, State) ->
-  io:format("transmission: ~w from ~w~n", [Msg, SenderP]),
+  %% io:format("transmission: ~w from ~w~n", [Msg, SenderP]),
   stack:trigger({fll, deliver, SenderP, Msg}),
   {noreply, State};
 handle_cast(Request, State) ->
