@@ -13,7 +13,7 @@ init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 
 
 init([Component]) ->
-  Component ! init,
+  Component ! {event, init},
   {ok, #state{component=Component}}.
 
 
@@ -26,7 +26,7 @@ stop(Component) ->
   gen_server:call(Component, stop).
 
 
-handle_info(Event, State) ->
+handle_info({event, Event}, State) ->
   % (dynamically) call the component's event handler
   NewComponentState = apply(State#state.component, upon_event, [Event, State#state.component_state]),
   {noreply, State#state{component_state=NewComponentState}}.

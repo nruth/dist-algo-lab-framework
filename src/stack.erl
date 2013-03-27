@@ -81,7 +81,7 @@ handle_call(stop, _From, State) ->
 % relay event to other components
 handle_cast({trigger, Event}, State) ->
   lists:map(
-    fun (Receiver) -> Receiver ! Event end,
+    fun (Receiver) -> Receiver ! {event, Event} end,
     State#state.components
   ),
   {noreply, State};
