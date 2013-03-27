@@ -40,4 +40,4 @@ upon_event(Other, State) ->
   State.
 
 start_timer(Delta) ->
-  timer:apply_interval(Delta, stack, trigger_one_receiver, [sl, {sl, timeout}]).
+  timer:apply_interval(Delta, stack, trigger_one_receiver, [sl, timeout]).
