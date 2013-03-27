@@ -13,7 +13,7 @@ stop() ->
 
 
 upon_event(init, _) ->
-  start_timer(500),
+  component:start_timer(500),
   #state{sent=sets:new()};
 
 upon_event(timeout, State) ->
@@ -43,5 +43,3 @@ upon_event(Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
   State.
 
-start_timer(Delta) ->
-  timer:apply_interval(Delta, stack, trigger_one_receiver, [sl, timeout]).

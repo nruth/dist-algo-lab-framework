@@ -2,7 +2,7 @@
 -behaviour(gen_server).
 
 -export([
-start_link/1, stop/1,
+start_link/1, stop/1, start_timer/1, start_timer/2,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
@@ -24,6 +24,16 @@ start_link(Component) ->
 
 stop(Component) ->
   gen_server:call(Component, stop).
+
+% sends a timeout event to the calling pid every Duration miliseconds
+start_timer(Duration) ->
+  start_timer(self(), Duration).
+
+% send a timeout event to Destination every Duration miliseconds
+start_timer(Destination, Duration) ->
+  timer:apply_interval(Duration,
+    stack, trigger_one_receiver, [Destination, timeout]
+  ).
 
 
 handle_info({event, Event}, State) ->
