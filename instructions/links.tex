@@ -1,0 +1,330 @@
+% TO BE DONE 19th April
+% ALSO GIVE LAB ASSIGNMENT ON 19th APRIL
+% 1st deadline: 26th
+% final: 3rd May
+
+% How is it graded
+% How did they split the work
+
+%
+%  untitled
+%
+%  Created by Nicholas Trevor Rutherford on 2013-03-19.
+%  Copyright (c) 2013 __MyCompanyName__. All rights reserved.
+%
+\documentclass[a4paper]{article}
+
+% Use utf-8 encoding for foreign characters
+\usepackage[utf8]{inputenc}
+
+% Setup for fullpage use
+% \usepackage{fullpage}
+
+% Uncomment some of the following if you use the features
+%
+% Running Headers and footers
+%\usepackage{fancyhdr}
+
+% Multipart figures
+%\usepackage{subfigure}
+
+% More symbols
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+%\usepackage{latexsym}
+\newcommand{\union}{\cup}
+
+% Surround parts of graphics with box
+% \usepackage{boxedminipage}
+
+% Package for including code in the document
+\usepackage{listings}
+
+\usepackage[ruled,vlined]{algorithm2e}
+
+\usepackage{hyperref}
+
+
+% This is now the recommended way for checking for PDFLaTeX:
+\usepackage{ifpdf}
+
+%\newif\ifpdf
+%\ifx\pdfoutput\undefined
+%\pdffalse % we are not running PDFLaTeX
+%\else
+%\pdfoutput=1 % we are running PDFLaTeX
+%\pdftrue
+%\fi
+
+\ifpdf
+\usepackage[pdftex]{graphicx}
+\else
+\usepackage{graphicx}
+\fi
+\title{LSINF2345 Communication links abstraction lab}
+\author{Nicholas Rutherford}
+
+\date{19 March 2013}
+
+
+\begin{document}
+\lstset{language=erlang}
+
+\ifpdf
+\DeclareGraphicsExtensions{.pdf, .jpg, .tif}
+\else
+\DeclareGraphicsExtensions{.eps, .jpg}
+\fi
+
+\maketitle
+
+
+\section{Introduction}
+
+In this lab you will explore the software framework provided
+for your coursework assignments. It includes a component stack model, and the
+fair-loss and stubborn link modules as a starting point and templates to work
+from.
+
+Attempt the following exercises in the same pairs you will use for your graded
+coursework. As for the coursework, it's ok to talk to the other students about
+how to solve the problems, but don't copy their code.
+
+\section{Framework overview} % (fold)
+\label{sec:framework_overview}
+
+This section briefly explains the role of key framework files.
+
+In order to find documentation for Erlang functions, try Google, the reference
+manual: \\
+\url{http://www.erlang.org/doc/apps/stdlib/index.html}, and possibly
+\url{http://erldocs.com}.
+
+\subsection{Components} % (fold)
+\label{sub:components}
+
+The following components implement the two basic point-to-point communication
+abstractions provided by the book. You should use these files as templates
+for your own components implementing the higher layer abstractions.
+
+\subsubsection{fll.erl Fair-loss link} % (fold)
+\label{ssub:fll_erl}
+
+Fair-loss links provide best-effort point-to-point communication between
+discrete processes (nodes). Recall that while this link is unreliable, it is
+used by the higher level components, which provide stronger abstractions such
+as reliable delivery.
+
+Hopefully you will find that the component's implementation looks very
+similar to the algorithm presented in the course book.
+
+%TODO cite book 2nd edition, not 1st, module names changed
+
+The details of inter-node communication have been abstracted away in the stack
+module. You should assume best-effort (unreliable) communication, as described
+for the fll component. That is, a message may fail to arrive, and no ordering
+guarantees or time bounds are provided, but some messages will arrive (it's
+unreliable, but not completely useless).\footnote{For the curious, Erlang
+primitives build on TCP and tend to give stronger guarantees, so for testing
+purposes we have injected additional problems by randomly dropping and
+delaying sent transmissions.}
+
+If you'd like to use \lstinline!io:format! yourself to make your program more
+chatty, refer to the documentation at
+\url{http://erlang.org/doc/man/io.html#format-1}\\
+or the side note at \url{http://learnyousomeerlang.com/syntax-in-functions}
+to find out about the string substitution characters \lstinline!'~w~n'!.
+
+% subsubsection fll_erl (end)
+
+\subsubsection{sl.erl Stubborn link} % (fold)
+\label{ssub:sl_erl_stubborn_link}
+
+Stubborn links build on fair-loss links by guaranteeing that a sent message
+will eventually arrive at its destination – in fact it will arrive many times.
+
+Here you can see how stack:trigger is used to create the stack events
+prescribed by the book's algorithms. Here it's used to request that fll sends
+a message on its behalf. These are asynchronously broadcast to the other components,
+which will act on them or ignore them according to (your implementation of)
+their algorithm.
+
+Note how a timer is used to periodically trigger the component's timeout event
+and re-send the messages. Also see the sets documentation for methods that
+might be useful in your own code. You might prefer to use lists, or to read
+the overview of available data structures at
+\url{http://learnyousomeerlang.com/a-short-visit-to-common-data-structures}.
+
+In case you're not familiar with higher-order functions, \lstinline!sets:fold!
+is used to execute the given function once for each set element. We don't use
+the returned accumulator value as here we were only interested in fold as an
+iterator, not an aggregator. The lists library also provides map and some
+other functions, as you can find in the documentation.
+
+% subsubsection sl_erl_stubborn_link (end)
+
+% subsection components (end)
+
+
+
+\subsection{Internals} % (fold)
+\label{sub:internals}
+
+In order to understand the implementation of the provided abstraction you
+may find the following useful:
+\url{http://www.erlang.org/doc/man/gen_server.html}\\
+\url{http://learnyousomeerlang.com/clients-and-servers}
+
+\subsubsection{stack.erl} % (fold)
+\label{sub:stack_erl}
+
+The stack module is responsible for loading components, propagating events
+within the stack, and ensuring the stack is the unit-of-failure: when one
+component crashes the entire stack stops.
+
+% subsection stack_erl (end)
+
+\subsubsection{component.erl} % (fold)
+\label{sub:component_erl}
+
+The component module is an abstraction to hide some irrelevant implementation
+details from you regarding their startup and the propagation and receipt of
+stack events.
+
+% subsection component_erl (end)
+
+% subsection internals (end)
+
+
+
+\section{Lab activity} % (fold)
+\label{sec:lab_activity}
+
+The following exercises will have you implement your first components with the
+framework.
+
+\subsection{Implement perfect links} % (fold)
+\label{sub:implement_pl}
+
+In a new file, \verb!src/pl.erl!, implement the ``Perfect Link'' abstraction
+with Algorithm~\ref{algo:pl}. Use the sl component as a template.
+
+%TODO: insert the algorithm here
+
+% \begin{verbatim}
+% Algorithm 2.2: Eliminate Duplicates
+% Implements: PerfectPointToPointLinks, instance pl.
+% Uses: StubbornPointToPointLinks, instance sl.
+%
+% upon event < pl, Init > do
+%   delivered := emptyset;
+%
+% upon event <pl, Send | q, m > do
+%   trigger < sl, Send | q, m >;
+%
+% upon event <sl, Deliver | p, m > do
+%   if m in delivered then
+%     delivered := delivered union {m};
+%     trigger < pl, Deliver | p, m>;
+% \end{verbatim}
+
+\begin{algorithm}[htbp]
+  \SetKw{KwImplements}{Implements: }{}{}
+  \SetKw{KwUses}{Uses: }{}{}
+  \SetKw{KwTrigger}{trigger}
+  \SetKwProg{KwEvent}{upon event}{ do}{}
+
+  \SetAlgoNoLine % \SetAlgoLined
+  \KwImplements{PerfectPointToPointLinks, instance pl}.\\
+  \KwUses{StubbornPointToPointLinks, instance sl}.\\
+  \BlankLine
+
+  \KwEvent{$<$ pl, Init $>$}{
+    $delivered := emptyset$\;
+  }
+  \BlankLine
+
+  \KwEvent{$< pl, Send | q, m >$}{
+    \KwTrigger{$< sl, Send | q, m >$}\;
+  }
+  \BlankLine
+
+  \KwEvent{$< sl, Deliver | p, m >$}{
+    \uIf{m in delivered}{
+      $delivered := delivered \union \{m\}$\;
+      \KwTrigger{$< pl, Deliver | p, m>$}\;
+    }
+  }
+  \BlankLine
+ \caption{Eliminate Duplicates, by Cachin et al.}
+ \label{algo:pl}
+\end{algorithm}
+
+
+% subsection implement_pl (end)
+
+\subsection{Optimising the perfect-link abstraction} % (fold)
+\label{sub:optimising_pl}
+
+The pl, sl, fll messaging stack is theoretically correct, but expensive to
+operate as-is. In the following you'll optimise your stack to send fewer
+messages without jeopardising the resulting abstractions.
+
+\subsubsection{Weakening stubborn delivery by halting retransmission} % (fold)
+\label{ssub:weakening_stubborn_delivery_by_halting_retransmission}
+
+Does the ``stubborn delivery'' property make sense in practice? Can you think
+of a time when it's safe to stop retransmitting the same message? How would
+you implement it? Can you do it without modifying the sl.erl file?
+
+% subsubsection weakening_stubborn_delivery_by_halting_retransmission (end)
+
+\subsubsection{Garbage collecting terminated algorithm retransmissions} % (fold)
+\label{ssub:halting_retransmission_on_algorithm_termination}
+
+Having found a way to halt the retransmission of individual messages, can you
+think of a way to modify this to work on sets of messages? Once an algorithm
+using the links has terminated execution there is no need to continue
+retransmitting its messages. For now don't worry about algorithm termination,
+simply demonstrate that you can group messages by an integer identifier (or
+similar) and have them all stop being retransmitted. That is to say, you
+should modify ``If a correct process p sends a message m once to a correct
+process q, then q delivers m an infinite number of times'' to ``If a correct
+process p sends a message m once to a correct process q as part of an
+algorithm a, then q delivers m one or more times before a terminates, and
+infinitely often if a does not terminate''.
+
+% subsubsection halting_retransmission_on_algorithm_termination (end)
+
+\subsubsection{Other ideas} % (fold)
+\label{ssub:other_ideas}
+
+How else might you optimise pl, sl, fll? Check the performance clauses of
+sections 2.4.3-4 in the course book, about sl and pl, for ideas.
+
+Consider the consequences of node failures and the various failure models
+with the algorithms and your changes.
+
+% subsubsection other_ideas (end)
+
+
+
+% subsection optimising_pl (end)
+
+% section lab_activity (end)
+
+% section framework_overview (end)
+
+
+\bibliographystyle{plain}
+\bibliography{}
+
+
+
+\end{document}
+
+
+
+
+
+
