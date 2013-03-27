@@ -37,6 +37,6 @@ upon_event({fll, send, DestinationNodeQ, Msg}, State) ->
   end,
   State;
 
-upon_event(Other, State) ->
+upon_event(_Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
   State.
