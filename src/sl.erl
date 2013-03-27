@@ -36,7 +36,7 @@ upon_event({fll, deliver, SenderNodeP, Msg}, State) ->
   State;
 
 upon_event(Other, State) ->
-  io:format("~w ignoring event ~w~n", [?MODULE, Other]),
+  %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
   State.
 
 start_timer(Delta) ->
