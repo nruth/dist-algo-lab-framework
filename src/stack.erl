@@ -5,6 +5,7 @@
 -export([
 start_link/0, stop/0,
 add_component/1, query_components/0, trigger/1, trigger_one_receiver/2, transmit/2,
+nodes/0,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
@@ -34,6 +35,9 @@ trigger_one_receiver(Destination, Event) ->
 % shut down the stack and any launched components
 stop() ->
   gen_server:call(?MODULE, stop).
+
+nodes() ->
+  [n1, n2, n3, n4, n5].
 
 
 % returns the currently registered components
