@@ -38,7 +38,7 @@ start_timer(Destination, Duration) ->
 
 handle_info({event, Event}, State) ->
   % (dynamically) call the component's event handler
-  NewComponentState = apply(State#state.component, upon_event, [Event, State#state.component_state]),
+  NewComponentState = (State#state.component):upon_event(Event, State#state.component_state),
   {noreply, State#state{component_state=NewComponentState}}.
 
 

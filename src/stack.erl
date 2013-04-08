@@ -61,7 +61,7 @@ init([]) ->
 
 terminate(normal, State) ->
   io:format("~w terminating stack.~n", [?MODULE]),
-  lists:map(fun(Component) -> apply(Component, stop, []) end, ?STACKSET:to_list(State#state.components)),
+  lists:map(fun(Component) -> Component:stop() end, ?STACKSET:to_list(State#state.components)),
   io:format("~w terminated.~n", [?MODULE]),
   ok.
 
@@ -122,7 +122,7 @@ launch_component_and_dependencies_if_missing(Component) ->
     false ->
       % launch component before recursing on dependencies to break dependency loops
       % Link components so when a component crashes the whole stack crashes
-      apply(Component, start_link, []),
+      Component:start_link(),
       % launch missing dependencies and return launched component set
       ?STACKSET:add_element(Component,  start_component_dependencies(Component));
     true ->
@@ -145,7 +145,7 @@ start_component_dependencies(Component) ->
 
 % returns component dependencies, a list of other components
 uses(Component) ->
-  apply(Component, uses, []).
+  Component:uses().
 
 
 is_component_running(Component) ->
