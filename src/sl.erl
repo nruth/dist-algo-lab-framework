@@ -3,6 +3,8 @@
 -export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
 -record(state, {sent}).
 
+-define(RESEND_PERIOD, 3000).
+
 uses() -> [fll].
 
 start_link() ->
@@ -13,7 +15,7 @@ stop() ->
 
 
 upon_event(init, _) ->
-  component:start_timer(500),
+  component:start_timer(?RESEND_PERIOD),
   #state{sent=sets:new()};
 
 upon_event(timeout, State) ->
