@@ -16,10 +16,12 @@ upon_event(init, _) ->
 
 upon_event({pl, send, DestinationNodeQ, Msg}, State) ->
   % ask sl to send the msg, but first tag it with a unique identifier
-  stack:trigger({sl, send, DestinationNodeQ, {{pl_msg_id, make_ref()}, Msg}}),
+  stack:trigger({sl, send, DestinationNodeQ, {pl, make_ref(), Msg}}),
   State;
 
-upon_event({sl, deliver, SenderNodeP, {{pl_msg_id, Id}, Msg}}, State) ->
+% only match sl delivered messages which pl sent
+upon_event({sl, deliver, SenderNodeP, {pl, Id, Msg}}, State) ->
+  % only deliver messages not previously delivered
   State#state{
     delivered =  case sets:is_element(Id, State#state.delivered) of
                     true ->

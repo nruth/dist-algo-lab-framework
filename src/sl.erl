@@ -28,11 +28,16 @@ upon_event(timeout, State) ->
   State;
 
 upon_event({sl, send, DestinationNodeQ, Msg}, State) ->
+  % Tag sl messages
+  % ---------------
+  % pack msg for recognition of sl msgs delivered by fll, in order to filter
+  % out fll delivered msgs sent by a component other than sl
+  PackedMsg = {sl, Msg},
   % tell fll to send the message, and add it to the sent list for retransmission
-  stack:trigger({fll, send, DestinationNodeQ, Msg}),
-  State#state{sent = sets:add_element({DestinationNodeQ, Msg}, State#state.sent)};
+  stack:trigger({fll, send, DestinationNodeQ, PackedMsg}),
+  State#state{sent = sets:add_element({DestinationNodeQ, PackedMsg}, State#state.sent)};
 
-upon_event({fll, deliver, SenderNodeP, Msg}, State) ->
+upon_event({fll, deliver, SenderNodeP, {sl, Msg}}, State) ->
   % indicate to the stack that sl has delivered the message
   stack:trigger({sl, deliver, SenderNodeP, Msg}),
   State;
