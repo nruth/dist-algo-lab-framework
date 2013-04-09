@@ -64,7 +64,7 @@
 \title{LSINF2345 Communication links abstraction lab}
 \author{Nicholas Rutherford}
 
-\date{19 March 2013}
+\date{April 2013}
 
 
 \begin{document}
@@ -130,10 +130,10 @@ purposes we have injected additional problems by randomly dropping and
 delaying sent transmissions.}
 
 If you'd like to use \lstinline!io:format! yourself to make your program more
-chatty, refer to the documentation at
-\url{http://erlang.org/doc/man/io.html#format-1}\\
-or the side note at \url{http://learnyousomeerlang.com/syntax-in-functions}
-to find out about the string substitution characters \lstinline!'~w~n'!.
+chatty, refer to the
+documentation\footnote{\url{http://erlang.org/doc/man/io.html\#format-1}} or
+the side note at \url{http://learnyousomeerlang.com/syntax-in-functions} to
+find out about the string substitution characters \lstinline!'~w~n'!.
 
 % subsubsection fll_erl (end)
 
@@ -151,15 +151,13 @@ their algorithm.
 
 Note how a timer is used to periodically trigger the component's timeout event
 and re-send the messages. Also see the sets documentation for methods that
-might be useful in your own code. You might prefer to use lists, or to read
-the overview of available data structures at
-\url{http://learnyousomeerlang.com/a-short-visit-to-common-data-structures}.
+might be useful in your own code. You might prefer lists, or some other
+structure\footnote{\url{http://learnyousomeerlang.com/a-short-visit-to-common-data-structures}}.
 
 In case you're not familiar with higher-order functions, \lstinline!sets:fold!
 is used to execute the given function once for each set element. We don't use
 the returned accumulator value as here we were only interested in fold as an
-iterator, not an aggregator. The lists library also provides map and some
-other functions, as you can find in the documentation.
+iterator. The lists library also provides map and some other functions.
 
 % subsubsection sl_erl_stubborn_link (end)
 
@@ -260,22 +258,31 @@ with Algorithm~\ref{algo:pl}. Use the sl component as a template.
  \label{algo:pl}
 \end{algorithm}
 
+Modify the algorithm so that if two requests arrive for the same message
+the message is sent exactly twice. That is, each received send request
+produces a unique message even if the messages being sent are equal. This
+is useful in sending control signals, such as those of the failure detector P.
+
+Modify the algorithm so that pl only delivers its own messages, maintaining
+the no-creation property. It should ignore sl deliver events for messages not
+sent by pl (where pl may be itself, or the pl component on another node). You
+may find \verb!make_ref()!\footnote{\url{http://erlang.org/doc/man/erlang.html\#make_ref-0}} useful for generating pseudo-random ids.
 
 % subsection implement_pl (end)
 
 \subsection{Optimising the perfect-link abstraction} % (fold)
 \label{sub:optimising_pl}
 
-The pl, sl, fll messaging stack is theoretically correct, but expensive to
-operate as-is. In the following you'll optimise your stack to send fewer
-messages without jeopardising the resulting abstractions.
+The pl, sl, fll messaging stack is theoretically correct, but expensive.
+In the following you'll optimise your stack to send fewer
+messages and consider how it changes the abstraction's properties.
 
 \subsubsection{Weakening stubborn delivery by halting retransmission} % (fold)
 \label{ssub:weakening_stubborn_delivery_by_halting_retransmission}
 
 Does the ``stubborn delivery'' property make sense in practice? Can you think
 of a time when it's safe to stop retransmitting the same message? How would
-you implement it? Can you do it without modifying the sl.erl file?
+you implement it?
 
 % subsubsection weakening_stubborn_delivery_by_halting_retransmission (end)
 
