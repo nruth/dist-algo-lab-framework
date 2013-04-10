@@ -95,4 +95,6 @@ terminal 2:
 
 # TODO
 
-write API instructions with code samples, enough to write p and pl
+- write API instructions with code samples, enough to write p and pl
+- configure nodes for p and broadcast algos
+
