@@ -95,9 +95,11 @@ handle_cast({trigger, Event}, State) ->
   ),
   {noreply, State};
 
+% receive transmission from another node
 handle_cast({transmission, {from, SenderP}, Msg}, State) ->
-  %% io:format("transmission: ~w from ~w~n", [Msg, SenderP]),
-  stack:trigger({fll, deliver, SenderP, Msg}),
+  % io:format("transmission: ~w from ~w~n", [Msg, SenderP]),
+  % Assume fll is always used as the low-level point-to-point comm primitive
+  send_event(fll, {transmission_rcv, SenderP, Msg}),
   {noreply, State};
 handle_cast(Request, State) ->
   {stop, {unexpected_message, Request}, State}.

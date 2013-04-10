@@ -29,14 +29,26 @@ upon_event(init, State) ->
   %% State;
 
 upon_event({fll, send, DestinationNodeQ, Msg}, State) ->
+  % drop some messages, delay the rest
   case random:uniform(10) of
     1 ->
       io:format("fll dropping message~n");
     _ ->
       % send with delay
       io:format("fll delaying message~n"),
-      timer:apply_after(random:uniform(?MAX_DELAY), stack, transmit, [DestinationNodeQ, Msg]);
+      timer:apply_after(
+        random:uniform(?MAX_DELAY),
+        stack, transmit, [DestinationNodeQ, Msg]
+      )
   end,
+  State;
+
+upon_event({transmission_rcv, SenderP, Msg}, State) ->
+  % delay delivery
+  timer:apply_after(
+    random:uniform(?MAX_DELAY),
+    stack, trigger, [{fll, deliver, SenderP, Msg}]
+  ),
   State;
 
 upon_event(_Other, State) ->
