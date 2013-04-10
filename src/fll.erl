@@ -4,6 +4,9 @@
 
 -export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
 
+% upper bound of uniformly sampled delay range (from 0 to MAX_DELAY)
+-define(MAX_DELAY, 5000).
+
 uses() ->
   [].
 
@@ -29,12 +32,10 @@ upon_event({fll, send, DestinationNodeQ, Msg}, State) ->
   case random:uniform(10) of
     1 ->
       io:format("fll dropping message~n");
-    2 ->
+    _ ->
       % send with delay
       io:format("fll delaying message~n"),
-      timer:apply_after(random:uniform(500), stack, transmit, [DestinationNodeQ, Msg]);
-    _ ->
-      stack:transmit(DestinationNodeQ, Msg)
+      timer:apply_after(random:uniform(?MAX_DELAY), stack, transmit, [DestinationNodeQ, Msg]);
   end,
   State;
 
