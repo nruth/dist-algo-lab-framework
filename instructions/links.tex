@@ -81,24 +81,36 @@
 
 \section{Introduction}
 
-In this lab you will explore the software framework provided
-for your coursework assignments. It includes a component stack model, and the
-fair-loss and stubborn link modules as a starting point and templates to work
-from.
+In this lab you will explore the software framework for the coursework
+assignment. It provides the component stack, node (process) configuration,
+and the fair-loss and stubborn link components. These components should be
+used as a template for your own components.
+
+\subsection{How to work} % (fold)
+\label{sub:how_to_work}
 
 Attempt the following exercises in the same pairs you will use for your graded
-coursework. As for the coursework, it's ok to talk to the other students about
-how to solve the problems, but don't copy their code.
+coursework.
+
+% subsection how_to_work (end)
+
+\subsection{Where to find help} % (fold)
+\label{sub:where_to_find_help}
+
+Erlang documentation can be found with Google, or at the reference
+manual\footnote{\url{http://www.erlang.org/doc/apps/stdlib/index.html}}, and
+its re-designed copy \url{http://erldocs.com}.
+For algorithms refer to the course slides and textbook \cite{cachin2011}.
+
+As for the coursework, it's ok to talk to the other students about how to
+solve the problems, but don't copy their code.
+
+% subsection where_to_find_help (end)
 
 \section{Framework overview} % (fold)
 \label{sec:framework_overview}
 
 This section briefly explains the role of key framework files.
-
-In order to find documentation for Erlang functions, try Google, the reference
-manual: \\
-\url{http://www.erlang.org/doc/apps/stdlib/index.html}, and possibly
-\url{http://erldocs.com}.
 
 \subsection{Components} % (fold)
 \label{sub:components}
@@ -116,18 +128,15 @@ used by the higher level components, which provide stronger abstractions such
 as reliable delivery.
 
 Hopefully you will find that the component's implementation looks very
-similar to the algorithm presented in the course book.
-
-%TODO cite book 2nd edition, not 1st, module names changed
+similar to the algorithm presented in the course book \cite{cachin2011}.
 
 The details of inter-node communication have been abstracted away in the stack
 module. You should assume best-effort (unreliable) communication, as described
 for the fll component. That is, a message may fail to arrive, and no ordering
 guarantees or time bounds are provided, but some messages will arrive (it's
-unreliable, but not completely useless).\footnote{For the curious, Erlang
-primitives build on TCP and tend to give stronger guarantees, so for testing
-purposes we have injected additional problems by randomly dropping and
-delaying sent transmissions.}
+unreliable, but not useless).\footnote{Erlang's primitives build on TCP and
+tend to give stronger guarantees, so for testing purposes we have injected
+additional problems by randomly dropping and delaying sent and received transmissions.}
 
 If you'd like to use \lstinline!io:format! yourself to make your program more
 chatty, refer to the
@@ -158,6 +167,14 @@ In case you're not familiar with higher-order functions, \lstinline!sets:fold!
 is used to execute the given function once for each set element. We don't use
 the returned accumulator value as here we were only interested in fold as an
 iterator. The lists library also provides map and some other functions.
+
+As a final point, examine the tagging of sent messages and filtering of
+received messages. This is important, as without the means to identify which
+messages were sent by sl, it would also deliver messages not sent by sl,
+violating the no-creation property. Other solutions might involve
+point-to-point messaging rather than broadcasting of events within the stack.
+Here we retain the notion that all events are seen by all components, and
+rely on them structuring and filtering their messages accordingly.
 
 % subsubsection sl_erl_stubborn_link (end)
 
@@ -323,8 +340,18 @@ with the algorithms and your changes.
 % section framework_overview (end)
 
 
-\bibliographystyle{plain}
-\bibliography{}
+
+
+\begin{thebibliography}{9}
+
+\bibitem{cachin2011}
+  C. Cachin, R. Guerraoui, and L. Rodrigues,
+  \emph{Introduction to Reliable and Secure Distributed Programming}.
+  Springer-Verlag, Berlin
+  2nd Edition,
+  2011.
+
+\end{thebibliography}
 
 
 
