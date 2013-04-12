@@ -61,7 +61,7 @@
 \else
 \usepackage{graphicx}
 \fi
-\title{LSINF2345 Communication links abstraction lab}
+\title{LSINF2345 Lab: Implementing the basic abstractions}
 \author{Nicholas Rutherford}
 
 \date{April 2013}
@@ -84,12 +84,14 @@
 In this lab you will explore the software framework for the coursework
 assignment. It provides the component stack, node (process) configuration,
 and the fair-loss and stubborn link components. These components should be
-used as a template for your own components.
+used as a template for your own components. You will build the perfect-link,
+a failure detector, and a reliable broadcast component.
 
 \subsection{How to work} % (fold)
 \label{sub:how_to_work}
 
 Attempt the following exercises in the same pairs you will use for your graded
+coursework. It is expected that you will use code from this lab in your
 coursework.
 
 % subsection how_to_work (end)
@@ -101,6 +103,7 @@ Erlang documentation can be found with Google, or at the reference
 manual\footnote{\url{http://www.erlang.org/doc/apps/stdlib/index.html}}, and
 its re-designed copy \url{http://erldocs.com}.
 For algorithms refer to the course slides and textbook \cite{cachin2011}.
+Also, ask the assistant.
 
 As for the coursework, it's ok to talk to the other students about how to
 solve the problems, but don't copy their code.
@@ -115,9 +118,9 @@ This section briefly explains the role of key framework files.
 \subsection{Components} % (fold)
 \label{sub:components}
 
-The following components implement the two basic point-to-point communication
-abstractions provided by the book. You should use these files as templates
-for your own components implementing the higher layer abstractions.
+We provide the two basic point-to-point communication abstractions,
+\emph{fll} and \emph{sl}. You should use \emph{sl} as a template for your
+higher-layer components.
 
 \subsubsection{fll.erl Fair-loss link} % (fold)
 \label{ssub:fll_erl}
@@ -132,11 +135,12 @@ similar to the algorithm presented in the course book \cite{cachin2011}.
 
 The details of inter-node communication have been abstracted away in the stack
 module. You should assume best-effort (unreliable) communication, as described
-for the fll component. That is, a message may fail to arrive, and no ordering
-guarantees or time bounds are provided, but some messages will arrive (it's
-unreliable, but not useless).\footnote{Erlang's primitives build on TCP and
-tend to give stronger guarantees, so for testing purposes we have injected
-additional problems by randomly dropping and delaying sent and received transmissions.}
+for the \emph{fll} component. That is, a message may fail to arrive, and no ordering
+guarantees or time bounds are provided, but some messages will arrive --
+unreliable, but not useless\footnote{Erlang's primitives build on TCP and tend
+to give stronger guarantees, so for testing purposes we have injected
+additional problems by randomly dropping and delaying sent and received
+transmissions.}.
 
 If you'd like to use \lstinline!io:format! yourself to make your program more
 chatty, refer to the
@@ -153,7 +157,7 @@ Stubborn links build on fair-loss links by guaranteeing that a sent message
 will eventually arrive at its destination – in fact it will arrive many times.
 
 Here you can see how stack:trigger is used to create the stack events
-prescribed by the book's algorithms. Here it's used to request that fll sends
+prescribed by the book's algorithms. Here it's used to request that \emph{fll} sends
 a message on its behalf. These are asynchronously broadcast to the other components,
 which will act on them or ignore them according to (your implementation of)
 their algorithm.
@@ -170,7 +174,7 @@ iterator. The lists library also provides map and some other functions.
 
 As a final point, examine the tagging of sent messages and filtering of
 received messages. This is important, as without the means to identify which
-messages were sent by sl, it would also deliver messages not sent by sl,
+messages were sent by \emph{sl}, it would also deliver messages not sent by \emph{sl},
 violating the no-creation property. Other solutions might involve
 point-to-point messaging rather than broadcasting of events within the stack.
 Here we retain the notion that all events are seen by all components, and
@@ -222,7 +226,7 @@ framework.
 \label{sub:implement_pl}
 
 In a new file, \verb!src/pl.erl!, implement the ``Perfect Link'' abstraction
-with Algorithm~\ref{algo:pl}. Use the sl component as a template.
+with Algorithm~\ref{algo:pl}. Use the \emph{sl} component as a template.
 
 %TODO: insert the algorithm here
 
@@ -275,65 +279,61 @@ with Algorithm~\ref{algo:pl}. Use the sl component as a template.
  \label{algo:pl}
 \end{algorithm}
 
+The algorithm is theoretically sound, but in practice we have some problems
+to resolve.
+
+\subsubsection{Duplicate messages} % (fold)
+\label{ssub:duplicate_messages}
+
+Sometimes we want to send the same message twice. Take, for example, the
+perfect failure detector's \emph{heartbeat\_reply} message. The message
+content is identical each time a heartbeat reply is sent, but the messages are
+independent. Each time a heartbeat is sent by \emph{pl} it should be delivered
+exactly once. If the same message content is sent twice it should be
+delivered twice, otherwise the failure detector would suspect all nodes at
+the second heartbeat. Messages should be distinguished by the act of sending
+them, not by their content.
+
 Modify the algorithm so that if two requests arrive for the same message
 the message is sent exactly twice. That is, each received send request
-produces a unique message even if the messages being sent are equal. This
-is useful in sending control signals, such as those of the failure detector P.
+produces a unique message even if the contents of the sent messages are equal.
 
-Modify the algorithm so that pl only delivers its own messages, maintaining
-the no-creation property. It should ignore sl deliver events for messages not
-sent by pl (where pl may be itself, or the pl component on another node). You
-may find \verb!make_ref()!\footnote{\url{http://erlang.org/doc/man/erlang.html\#make_ref-0}} useful for generating pseudo-random ids.
+% subsubsection duplicate_messages (end)
+
+
+\subsubsection{Maintain no-creation with shared components} % (fold)
+\label{ssub:no_creation_with_multiple_stack_algorithms}
+
+Modify the algorithm so that \emph{pl} only delivers its own messages, maintaining
+the no-creation property. It should ignore \emph{sl} deliver events for messages not
+sent by \emph{pl} (where \emph{pl} may be itself, or the \emph{pl} component
+on another node). You may find
+\verb!make_ref()!\footnote{\url{http://erlang.org/doc/man/erlang.html\#make_ref-0}}
+useful for generating pseudo-random ids.
+
+% subsubsection no_creation_with_multiple_stack_algorithms (end)
 
 % subsection implement_pl (end)
 
-\subsection{Optimising the perfect-link abstraction} % (fold)
-\label{sub:optimising_pl}
 
-The pl, sl, fll messaging stack is theoretically correct, but expensive.
-In the following you'll optimise your stack to send fewer
-messages and consider how it changes the abstraction's properties.
+\subsection{Implement \emph{p}, the perfect failure detector} % (fold)
+\label{sub:implement_p}
 
-\subsubsection{Weakening stubborn delivery by halting retransmission} % (fold)
-\label{ssub:weakening_stubborn_delivery_by_halting_retransmission}
-
-Does the ``stubborn delivery'' property make sense in practice? Can you think
-of a time when it's safe to stop retransmitting the same message? How would
-you implement it?
-
-% subsubsection weakening_stubborn_delivery_by_halting_retransmission (end)
-
-\subsubsection{Garbage collecting terminated algorithm retransmissions} % (fold)
-\label{ssub:halting_retransmission_on_algorithm_termination}
-
-Having found a way to halt the retransmission of individual messages, can you
-think of a way to modify this to work on sets of messages? Once an algorithm
-using the links has terminated execution there is no need to continue
-retransmitting its messages. For now don't worry about algorithm termination,
-simply demonstrate that you can group messages by an integer identifier (or
-similar) and have them all stop being retransmitted. That is to say, you
-should modify ``If a correct process p sends a message m once to a correct
-process q, then q delivers m an infinite number of times'' to ``If a correct
-process p sends a message m once to a correct process q as part of an
-algorithm a, then q delivers m one or more times before a terminates, and
-infinitely often if a does not terminate''.
-
-% subsubsection halting_retransmission_on_algorithm_termination (end)
-
-\subsubsection{Other ideas} % (fold)
-\label{ssub:other_ideas}
-
-How else might you optimise pl, sl, fll? Check the performance clauses of
-sections 2.4.3-4 in the course book, about sl and pl, for ideas.
-
-Consider the consequences of node failures and the various failure models
-with the algorithms and your changes.
-
-% subsubsection other_ideas (end)
+% subsection implement_p (end)
 
 
+\subsection{Implement best-effort and lazy reliable broadcast} % (fold)
+\label{sub:implement_best_effort_and_reliable_broadcast}
 
-% subsection optimising_pl (end)
+% subsection implement_best_effort_and_reliable_broadcast (end)
+
+\subsection{Implement Eventually P, and revisit the broadcast algorithms} % (fold)
+\label{sub:implement_eventually_p_and_revisit_the_broadcast_algorithms}
+
+Consider how Lazy Reliable Broadcast will function using eventually-P.
+Implement Eager Reliable Broadcast.
+
+% subsection implement_eventually_p_and_revisit_the_broadcast_algorithms (end)
 
 % section lab_activity (end)
 
