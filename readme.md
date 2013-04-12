@@ -98,3 +98,11 @@ terminal 2:
 - write API instructions with code samples, enough to write p and pl
 - configure nodes for p and broadcast algos
 
+
+# run robots
+
+cd(ebin). stack:start_link(). stack:add_component(dancing_robots).
+stack:trigger({dancerobot, turn_left}).
+stack:trigger({dancerobot, turn_right}).
+stack:trigger({dancerobot, step_forward}).
+stack:trigger({dancerobot, step_back}).
