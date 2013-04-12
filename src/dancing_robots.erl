@@ -8,7 +8,7 @@
 -define(FRAME_WIDTH, 400).
 -define(FRAME_PADDING , 50).
 
--define(TEMPO, 2000).
+-define(TEMPO, 1000).
 
 -record(state, {robot, wx}).
 -record(robot, {
@@ -23,7 +23,6 @@ start_link() ->
 
 stop() ->
   component:stop(?MODULE).
-
 
 upon_event(init, _) ->
   component:start_timer(?TEMPO),
@@ -46,6 +45,8 @@ upon_event(timeout, State) ->
     Others -> Others
   end,
   % TODO: broadcast next step
+  % io:format("NEXT MOVE: ~w~n", [NextStep]),
+  stack:trigger({dancerobot, NextStep}),
   State;
 
 
@@ -65,22 +66,21 @@ upon_event({dancerobot, step_forward}, State) ->
   {{dx, DX}, {dy, DY}} = step_trig(State#state.robot#robot.bearing, 10),
   robot_new_pose(State, update_robot_position(State#state.robot, DX, DY));
 
-
 upon_event({dancerobot, step_back}, State) ->
   {{dx, DX}, {dy, DY}} = step_trig(State#state.robot#robot.bearing, 10),
   % negate dx and dy to step backwards
   robot_new_pose(State, update_robot_position(State#state.robot, -DX, -DY));
 
 upon_event({dancerobot, {left_arm, Pose}}, State) ->
-  RobotNewPose = #robot{left_arm = arm_pose_to_str(Pose)},
+  RobotNewPose = State#state.robot#robot{left_arm = arm_pose_to_str(Pose)},
   robot_new_pose(State, RobotNewPose);
 
 upon_event({dancerobot, {right_arm, Pose}}, State) ->
-  RobotNewPose = #robot{right_arm = arm_pose_to_str(Pose)},
+  RobotNewPose = State#state.robot#robot{right_arm = arm_pose_to_str(Pose)},
   robot_new_pose(State, RobotNewPose);
 
 upon_event({dancerobot, {head, Size}}, State) ->
-  RobotNewPose = #robot{head = head_size_to_str(Size)},
+  RobotNewPose = State#state.robot#robot{head = head_size_to_str(Size)},
   robot_new_pose(State, RobotNewPose);
 
 upon_event(_Other, State) ->
@@ -120,9 +120,9 @@ update_onpaint({_WxServer, Frame, Panel}, Robot) ->
     ]),
     wxPaintDC:destroy(PaintDC)
   end,
-  % install the replacment on-paint callback
-  % & refresh the panel to redraw with the new content
+  % Install the replacment on-paint callback
   wxFrame:connect(Panel, paint, [{callback, OnPaint}]),
+  % Refresh the panel to redraw with the new content
   wxFrame:refresh(Frame).
 
 
