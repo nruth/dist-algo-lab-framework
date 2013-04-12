@@ -3,15 +3,18 @@
 
 -include_lib("wx/include/wx.hrl").
 
+% graphics settings
+-define(FRAME_HEIGHT, 400).
+-define(FRAME_WIDTH, 400).
+-define(FRAME_PADDING , 50).
+
+-define(TEMPO, 2000).
+
 -record(state, {robot, wx}).
 -record(robot, {
   left_arm = "_", right_arm = "_", head = "o",
-  x=100, y=100, bearing=0
+  x=round(?FRAME_WIDTH/2), y=round(?FRAME_HEIGHT/2), bearing=0
 }).
-
--define(TEMPO, 2000).
--define(FRAME_HEIGHT, 400).
--define(FRAME_WIDTH, 400).
 
 uses() -> [].
 
@@ -60,22 +63,13 @@ upon_event({dancerobot, turn_right}, State) ->
 
 upon_event({dancerobot, step_forward}, State) ->
   {{dx, DX}, {dy, DY}} = step_trig(State#state.robot#robot.bearing, 10),
-  RobotNewPose = State#state.robot#robot{
-    % update coords, but make sure it stays inside the box
-    x = max(0, min(?FRAME_WIDTH, State#state.robot#robot.x + DX)),
-    y = max(0, min(?FRAME_HEIGHT, State#state.robot#robot.y + DY))
-  },
-  robot_new_pose(State, RobotNewPose);
+  robot_new_pose(State, update_robot_position(State#state.robot, DX, DY));
+
 
 upon_event({dancerobot, step_back}, State) ->
-  % negate dx and dy to step backwards
   {{dx, DX}, {dy, DY}} = step_trig(State#state.robot#robot.bearing, 10),
-  RobotNewPose = State#state.robot#robot{
-    % update coords, but make sure it stays inside the box
-    x = max(0, min(?FRAME_WIDTH, State#state.robot#robot.x - DX)),
-    y = max(0, min(?FRAME_HEIGHT, State#state.robot#robot.y - DY))
-  },
-  robot_new_pose(State, RobotNewPose);
+  % negate dx and dy to step backwards
+  robot_new_pose(State, update_robot_position(State#state.robot, -DX, -DY));
 
 upon_event({dancerobot, {left_arm, Pose}}, State) ->
   RobotNewPose = #robot{left_arm = arm_pose_to_str(Pose)},
@@ -107,13 +101,23 @@ start_wx(Robot) ->
 % repaint panel with current robot position and pose
 update_onpaint({_WxServer, Frame, Panel}, Robot) ->
   OnPaint = fun(_Evt, _Obj) ->
-    io:format("OnPaint~n",[]),
     PaintDC = wxPaintDC:new(Panel),
+
+    % draw the robot
     wxDC:drawRotatedText(PaintDC,
       Robot#robot.left_arm ++ Robot#robot.head ++ Robot#robot.right_arm,
       {Robot#robot.x, Robot#robot.y},
       Robot#robot.bearing
     ),
+
+    % draw the stage boundary
+    wxDC:drawLines(PaintDC, [
+      {?FRAME_PADDING, ?FRAME_PADDING}, % top left
+      {?FRAME_WIDTH - ?FRAME_PADDING, ?FRAME_PADDING}, %top right
+      {?FRAME_WIDTH - ?FRAME_PADDING, ?FRAME_HEIGHT - ?FRAME_PADDING}, % bottom right
+      {?FRAME_PADDING, ?FRAME_HEIGHT - ?FRAME_PADDING}, % bottom left
+      {?FRAME_PADDING, ?FRAME_PADDING} % top left
+    ]),
     wxPaintDC:destroy(PaintDC)
   end,
   % install the replacment on-paint callback
@@ -155,8 +159,19 @@ head_size_to_str(Size) ->
 
 % returns {change in x, change in y} for a length Distance step when facing Bearing degrees
 step_trig(Bearing, Distance) ->
-  {{dx, Distance * math:sin(Bearing)}, {dy, Distance * math:cos(Bearing)}}.
+  DegreesToRadiansRatio = 2 * math:pi() / 360,
+  DX = Distance * math:sin(Bearing * DegreesToRadiansRatio),
+  DY = Distance * math:cos(Bearing * DegreesToRadiansRatio),
+  {{dx, round(DX)}, {dy, round(DY)}}.
 
 % return a (uniform) random element of the list
 pick_rand(List) ->
   lists:nth(random:uniform(length(List)), List).
+
+update_robot_position(Robot, DX, DY) ->
+  Robot#robot{
+    % update coords, but make sure it stays inside the box
+    x = max(?FRAME_PADDING, min((?FRAME_WIDTH-?FRAME_PADDING), Robot#robot.x + DX)),
+    y = max(?FRAME_PADDING, min((?FRAME_HEIGHT-?FRAME_PADDING), Robot#robot.y + DY))
+  }.
+
