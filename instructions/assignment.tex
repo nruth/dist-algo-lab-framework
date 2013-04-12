@@ -8,6 +8,130 @@
 % quality of report
 %
 
+
+\documentclass[a4paper]{article}
+
+% Use utf-8 encoding for foreign characters
+\usepackage[utf8]{inputenc}
+
+% Setup for fullpage use
+% \usepackage{fullpage}
+
+% Uncomment some of the following if you use the features
+%
+% Running Headers and footers
+%\usepackage{fancyhdr}
+
+% Multipart figures
+%\usepackage{subfigure}
+
+% More symbols
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+%\usepackage{latexsym}
+\newcommand{\union}{\cup}
+
+% Surround parts of graphics with box
+% \usepackage{boxedminipage}
+
+% Package for including code in the document
+\usepackage{listings}
+
+\usepackage[ruled,vlined]{algorithm2e}
+
+\usepackage{hyperref}
+
+
+% This is now the recommended way for checking for PDFLaTeX:
+\usepackage{ifpdf}
+
+%\newif\ifpdf
+%\ifx\pdfoutput\undefined
+%\pdffalse % we are not running PDFLaTeX
+%\else
+%\pdfoutput=1 % we are running PDFLaTeX
+%\pdftrue
+%\fi
+
+\ifpdf
+\usepackage[pdftex]{graphicx}
+\else
+\usepackage{graphicx}
+\fi
+\title{LSINF2345 Assignment 2013: Dancing robots}
+\author{Nicholas Rutherford}
+
+\date{April 2013}
+
+
+\begin{document}
+\lstset{language=erlang}
+
+\ifpdf
+\DeclareGraphicsExtensions{.pdf, .jpg, .tif}
+\else
+\DeclareGraphicsExtensions{.eps, .jpg}
+\fi
+
+\maketitle
+
+
+\section{Introduction}
+
+Shamshung's robotics team are deploying a new publicity campaign this year:
+georeplicated dancing robots. The robots will dance in 4 different venues
+simultaneously, connected by video, making up their own dance routine live.
+They have to be careful that nothing goes wrong, as a major rival,
+Phony, will be watching carefully for mistakes to discuss over lunch with
+their customers.
+
+Unfortunately for Shamsung, their robotic dancers are rather temperamental,
+and prone to breakdown before a show, or spectacular (often explosive) failure
+during a performance. This is unfortunate because, while naively assuming
+their robots would live forever, the team's software engineers decided one
+robot would lead, deciding on a dance routine and telling the other robots
+which steps to perform. This is not predetermined: the robots decide the next
+step just before taking it.
+
+In order to keep the show moving we need to substitute this
+central-point-of-failure with a suitable alternative. In this assignment you
+will design two (or more) solutions which keep the robots dancing using
+distributed algorithms from the course. You should explain your approach and
+provide a prototype implementation using the provided Erlang stack and
+dancing robot simulator.
+
+Management's specification for the dancers:
+
+  - the robots will start from the same pose
+  - the robots will perform the same dance routine: the same steps in the same order,
+    as if it had been written down before the show and given to them
+  - no robot can miss a step: if one robot takes it they all take its
+  - all robots must finish in the same pose and the same place on the stage
+
+  - (after the show the producer wants a print-out of the dance routine (to sell at auction))
+  - (no two robots can be out-of-sync by more than 10 seconds.)
+  - (create an application layer which selects a robot from the group to 
+      display on the local TV screen. It should announce a robot every 10 seconds, 
+      and should eventually stop displaying crashed robots).
+
+
+
+
+\subsection{Installing Erlang and WX} % (fold)
+\label{sub:installing_erlang_and_wx}
+
+Be sure to install (or build) Erlang with wxWidgets for the graphical
+component of the assignment.
+
+Mac users (10.8) can install 32-bit Erlang from
+\url{https://www.erlang-solutions.com/downloads/download-erlang-otp}.
+
+
+
+% subsection installing_erlang_and_wx (end)
+
+
+
 \subsection{Where to find help} % (fold)
 \label{sub:where_to_find_help}
 
@@ -24,3 +148,62 @@ It's ok to talk to the other students about how to solve the problems, but
 don't copy their code.
 
 % subsection where_to_find_help (end)
+
+
+
+
+
+
+
+
+\section{Optimising the perfect-link abstraction} % (fold)
+\label{sub:optimising_pl}
+
+The \emph{pl}, \emph{sl}, \emph{fll} messaging stack is theoretically correct, but expensive.
+In the following you'll optimise your stack to send fewer
+messages and consider how it changes the abstraction's properties.
+
+\subsection{Weakening stubborn delivery by halting retransmission} % (fold)
+\label{ssub:weakening_stubborn_delivery_by_halting_retransmission}
+
+Does the ``stubborn delivery'' property make sense in practice? Can you think
+of a time when it's safe to stop retransmitting the same message? How would
+you implement it?
+
+% subsubsection weakening_stubborn_delivery_by_halting_retransmission (end)
+
+\subsection{Garbage collecting terminated algorithm retransmissions} % (fold)
+\label{ssub:halting_retransmission_on_algorithm_termination}
+
+Having found a way to halt the retransmission of individual messages, can you
+think of a way to modify this to work on sets of messages? Once an algorithm
+using the links has terminated execution there is no need to continue
+retransmitting its messages. For now don't worry about algorithm termination,
+simply demonstrate that you can group messages by an integer identifier (or
+similar) and have them all stop being retransmitted. That is to say, you
+should modify ``If a correct process p sends a message m once to a correct
+process q, then q delivers m an infinite number of times'' to ``If a correct
+process p sends a message m once to a correct process q as part of an
+algorithm a, then q delivers m one or more times before a terminates, and
+infinitely often if a does not terminate''.
+
+% subsubsection halting_retransmission_on_algorithm_termination (end)
+
+\subsection{Other ideas} % (fold)
+\label{ssub:other_ideas}
+
+How else might you optimise \emph{pl}, \emph{sl}, \emph{fll}? Check the performance clauses of
+sections 2.4.3-4 in the course book, about \emph{sl} and \emph{pl}, for ideas.
+
+Consider the consequences of node failures and the various failure models
+with the algorithms and your changes.
+
+% subsubsection other_ideas (end)
+
+% subsection optimising_pl (end)
+
+
+
+
+\end{document}
+

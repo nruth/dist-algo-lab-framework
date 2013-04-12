@@ -2,7 +2,7 @@
 -export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
 -include_lib("wx/include/wx.hrl").
 -record(state, {robot, wx}).
--record(robot, {}).
+-record(robot, {left_arm = "_", right_arm = "_", head = "o"}).
 
 uses() -> [].
 
@@ -13,41 +13,74 @@ stop() ->
   component:stop(?MODULE).
 
 
+% TODO: timer which picks and broadcasts next random move, from every robot
+
 upon_event(init, _) ->
+  Robot = #robot{},
+  Wx = start_wx(Robot),
   #state{
-    robot = #robot{},
-    wx = start_wx()
+    robot = Robot,
+    wx = Wx
   };
+
+upon_event({dancerobot, left_arm_up}, State) ->
+  RobotNewPose = #robot{left_arm = "\\"},
+  robot_new_pose(State, RobotNewPose);
+
+upon_event({dancerobot, left_arm_down}, State) ->
+  RobotNewPose = #robot{left_arm = "_"},
+  robot_new_pose(State, RobotNewPose);
+
+upon_event({dancerobot, head_stretch}, State) ->
+  RobotNewPose = #robot{head = "0"},
+  robot_new_pose(State, RobotNewPose);
+
+upon_event({dancerobot, head_relax}, State) ->
+  RobotNewPose = #robot{head = "o"},
+  robot_new_pose(State, RobotNewPose);
+
+upon_event({dancerobot, right_arm_up}, State) ->
+  RobotNewPose = #robot{right_arm = "/"},
+  robot_new_pose(State, RobotNewPose);
+
+upon_event({dancerobot, right_arm_down}, State) ->
+  RobotNewPose = #robot{right_arm = "_"},
+  robot_new_pose(State, RobotNewPose);
 
 upon_event(_Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
   State.
 
 
-start_wx() ->
+start_wx(Robot) ->
   WxServer = wx:new(),
-  Frame = wxFrame:new(WxServer, -1, "Draw Angle", [{size, {400, 400}}]),
+  Frame = wxFrame:new(WxServer, -1, io_lib:format("Robot ~w", [node()]), [{size, {300, 300}}]),
   Panel = wxPanel:new(Frame),
-  update_onpaint({WxServer, Frame, Panel}),
+  % draw intial robot
+  update_onpaint({WxServer, Frame, Panel}, Robot),
+  wxFrame:connect(Frame, close_window, [{callback, fun(_Evt, _Obj) -> stack:stop() end}]),
   wxFrame:show(Frame),
   {WxServer, Frame, Panel}.
 
-update_onpaint({WxServer, Frame, Panel}) ->
+% repaint panel with current robot position and pose
+update_onpaint({WxServer, Frame, Panel}, Robot) ->
   OnPaint = fun(_Evt, _Obj) ->
     io:format("OnPaint~n",[]),
-    Paint = wxPaintDC:new(Panel),
-    Pen = wxPen:new(),
-    wxPen:setColour(Pen, ?wxRED),
-    wxDC:setPen(Paint, Pen),
-    %% wxDC:drawCircle(Paint, {200,200}, 100),
-    %% wxDC:drawArc(Paint, {300,200} , {300,200} , {200,200}),
-    wxDC:drawArc(Paint, {300,200} , {100,200} , {200,200}),
-    wxDC:drawArc(Paint, {100,200} , {300,200} , {200,200}),
-
-    wxDC:drawLine(Paint, {200, 200}, {300,200}), % 100 pixels long
-
-    wxPen:destroy(Pen),
-    wxPaintDC:destroy(Paint)
+    PaintDC = wxPaintDC:new(Panel),
+    wxDC:drawRotatedText(PaintDC,
+      Robot#robot.left_arm ++ Robot#robot.head ++ Robot#robot.right_arm,
+      {100, 100},
+      45
+    ),
+    wxPaintDC:destroy(PaintDC)
   end,
+  % install the replacment on-paint callback
+  % & refresh the panel to redraw with the new content
   wxFrame:connect(Panel, paint, [{callback, OnPaint}]),
   wxFrame:refresh(Frame).
+
+
+% update state and draw new robot to screen
+robot_new_pose(State, RobotNewPose) ->
+  update_onpaint(State#state.wx, RobotNewPose),
+  State#state{robot = RobotNewPose}.
