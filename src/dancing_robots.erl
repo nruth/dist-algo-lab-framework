@@ -1,5 +1,5 @@
 -module(dancing_robots).
--export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
+-export([ uses/0, upon_event/2, start_link/0, stop/0, start_dance/0, stop_dance/0 ]).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -10,13 +10,13 @@
 
 -define(TEMPO, 1000).
 
--record(state, {robot, wx}).
+-record(state, {dancing = false, robot, wx}).
 -record(robot, {
   left_arm = "_", right_arm = "_", head = "o",
   x=round(?FRAME_WIDTH/2), y=round(?FRAME_HEIGHT/2), bearing=0
 }).
 
-uses() -> [].
+uses() -> [beb].
 
 start_link() ->
   component:start_link(?MODULE).
@@ -24,16 +24,24 @@ start_link() ->
 stop() ->
   component:stop(?MODULE).
 
+start_dance() ->
+  broadcast(start_dance).
+
+stop_dance() ->
+  broadcast(stop_dance).
+
+
 upon_event(init, _) ->
   component:start_timer(?TEMPO),
   Robot = #robot{},
   Wx = start_wx(Robot),
   #state{
+    dancing = false,
     robot = Robot,
     wx = Wx
   };
 
-upon_event(timeout, State) ->
+upon_event(timeout, State=#state{dancing = true}) ->
   % pick a dance move and send to the group
   NextStep = case pick_rand([turn_left, turn_right,
     step_forward, step_back,
@@ -44,48 +52,56 @@ upon_event(timeout, State) ->
     right_arm -> {right_arm, rand_arm_pose()};
     Others -> Others
   end,
-  % TODO: broadcast next step
   % io:format("NEXT MOVE: ~w~n", [NextStep]),
-  stack:trigger({dancerobot, NextStep}),
+  stack:trigger({beb, broadcast,{dancerobot, NextStep}}),
   State;
 
+upon_event({beb, deliver, Sender, {dancerobot, Msg}}, State) ->
+  process_broadcast(Msg, State);
 
-upon_event({dancerobot, turn_left}, State) ->
+upon_event(_Other, State) ->
+  %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
+  State.
+
+
+process_broadcast(start_dance, State) ->
+  State#state{dancing = true};
+
+process_broadcast(stop_dance, State) ->
+  State#state{dancing = false};
+
+process_broadcast(turn_left, State) ->
   RobotNewPose = State#state.robot#robot{
     bearing = ((State#state.robot#robot.bearing - 45) rem 360)
   },
   robot_new_pose(State, RobotNewPose);
 
-upon_event({dancerobot, turn_right}, State) ->
+process_broadcast(turn_right, State) ->
   RobotNewPose = State#state.robot#robot{
     bearing = ((State#state.robot#robot.bearing + 45) rem 360)
   },
   robot_new_pose(State, RobotNewPose);
 
-upon_event({dancerobot, step_forward}, State) ->
+process_broadcast(step_forward, State) ->
   {{dx, DX}, {dy, DY}} = step_trig(State#state.robot#robot.bearing, 10),
   robot_new_pose(State, update_robot_position(State#state.robot, DX, DY));
 
-upon_event({dancerobot, step_back}, State) ->
+process_broadcast(step_back, State) ->
   {{dx, DX}, {dy, DY}} = step_trig(State#state.robot#robot.bearing, 10),
   % negate dx and dy to step backwards
   robot_new_pose(State, update_robot_position(State#state.robot, -DX, -DY));
 
-upon_event({dancerobot, {left_arm, Pose}}, State) ->
+process_broadcast( {left_arm, Pose}, State) ->
   RobotNewPose = State#state.robot#robot{left_arm = arm_pose_to_str(Pose)},
   robot_new_pose(State, RobotNewPose);
 
-upon_event({dancerobot, {right_arm, Pose}}, State) ->
+process_broadcast({right_arm, Pose}, State) ->
   RobotNewPose = State#state.robot#robot{right_arm = arm_pose_to_str(Pose)},
   robot_new_pose(State, RobotNewPose);
 
-upon_event({dancerobot, {head, Size}}, State) ->
+process_broadcast({head, Size}, State) ->
   RobotNewPose = State#state.robot#robot{head = head_size_to_str(Size)},
-  robot_new_pose(State, RobotNewPose);
-
-upon_event(_Other, State) ->
-  %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
-  State.
+  robot_new_pose(State, RobotNewPose).
 
 
 start_wx(Robot) ->
@@ -175,3 +191,5 @@ update_robot_position(Robot, DX, DY) ->
     y = max(?FRAME_PADDING, min((?FRAME_HEIGHT-?FRAME_PADDING), Robot#robot.y + DY))
   }.
 
+broadcast(Msg) ->
+  stack:trigger({beb, broadcast, {dancerobot, Msg}}).

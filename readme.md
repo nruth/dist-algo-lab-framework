@@ -106,3 +106,12 @@ stack:trigger({dancerobot, turn_left}).
 stack:trigger({dancerobot, turn_right}).
 stack:trigger({dancerobot, step_forward}).
 stack:trigger({dancerobot, step_back}).
+
+cd(ebin).
+stack:start_link().
+stack:add_component(dancing_robots).
+stack:connect('n1@localhost').
+dancing_robots:start_dance().
+
+
+

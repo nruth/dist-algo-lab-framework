@@ -33,7 +33,7 @@ upon_event({sl, deliver, SenderNodeP, {pl, Id, Msg}}, State) ->
   };
 
 upon_event({pl, deliver, SenderNodeQ, Msg}, State) ->
-  io:format("pl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
+  %% io:format("pl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
   State;
 
 upon_event(_Other, State) ->
