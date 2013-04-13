@@ -56,7 +56,7 @@ upon_event(timeout, State=#state{dancing = true}) ->
   stack:trigger({beb, broadcast,{dancerobot, NextStep}}),
   State;
 
-upon_event({beb, deliver, Sender, {dancerobot, Msg}}, State) ->
+upon_event({beb, deliver, _Sender, {dancerobot, Msg}}, State) ->
   process_broadcast(Msg, State);
 
 upon_event(_Other, State) ->

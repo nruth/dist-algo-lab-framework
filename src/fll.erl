@@ -7,6 +7,8 @@
 % upper bound of uniformly sampled delay range (from 0 to MAX_DELAY)
 -define(MAX_DELAY, 5000).
 
+-record(state, {reliable = true}).
+
 uses() ->
   [].
 
@@ -17,21 +19,28 @@ start_link() ->
 stop() ->
   component:stop(?MODULE).
 
-upon_event(init, State) ->
+upon_event(init, _State) ->
   %% Sets a seed for random number generation for the life of the process.
   % generate 12 crypto-safe random bytes, cast to 3 ints, use as seed
   <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
   random:seed({A,B,C}),
-  State;
+  #state{};
 
 %% upon_event({fll, deliver, SenderNodeQ, Msg}, State) ->
   %% io:format("fll received message: ~w from ~w~n", [Msg, SenderNodeQ]),
   %% State;
 
-upon_event({fll, send, DestinationNodeQ, Msg}, State) ->
+% send without losses or delays
+upon_event({fll, send, DestinationNodeQ, Msg}, State=#state{reliable = true}) ->
+  stack:transmit(DestinationNodeQ, Msg),
+  State;
+
+% send with random losses or delays
+upon_event({fll, send, DestinationNodeQ, Msg}, State=#state{reliable = false}) ->
   % drop some messages, delay the rest
   case random:uniform(10) of
     1 ->
+      dropped_msg;
       %% io:format("fll dropping message~n");
     _ ->
       % send with delay
@@ -43,7 +52,13 @@ upon_event({fll, send, DestinationNodeQ, Msg}, State) ->
   end,
   State;
 
-upon_event({transmission_rcv, SenderP, Msg}, State) ->
+% rcv without delays
+upon_event({transmission_rcv, SenderP, Msg}, State=#state{reliable = true}) ->
+  stack:trigger({fll, deliver, SenderP, Msg}),
+  State;
+
+% rcv with delays
+upon_event({transmission_rcv, SenderP, Msg}, State=#state{reliable = false}) ->
   % delay delivery
   timer:apply_after(
     random:uniform(?MAX_DELAY),

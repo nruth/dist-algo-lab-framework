@@ -32,9 +32,9 @@ upon_event({sl, deliver, SenderNodeP, {pl, Id, Msg}}, State) ->
                   end
   };
 
-upon_event({pl, deliver, SenderNodeQ, Msg}, State) ->
+%% upon_event({pl, deliver, SenderNodeQ, Msg}, State) ->
   %% io:format("pl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
-  State;
+  %% State;
 
 upon_event(_Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, _Other]),
