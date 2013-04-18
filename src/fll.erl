@@ -5,7 +5,7 @@
 -export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
 
 % upper bound of uniformly sampled delay range (from 0 to MAX_DELAY)
--define(MAX_DELAY, 5000).
+-define(MAX_DELAY, 2500).
 
 -record(state, {reliable = true}).
 
