@@ -6,19 +6,13 @@
 % How is it graded
 % How did they split the work
 
-%
-%  untitled
-%
-%  Created by Nicholas Trevor Rutherford on 2013-03-19.
-%  Copyright (c) 2013 __MyCompanyName__. All rights reserved.
-%
 \documentclass[a4paper]{article}
 
 % Use utf-8 encoding for foreign characters
 \usepackage[utf8]{inputenc}
 
 % Setup for fullpage use
-% \usepackage{fullpage}
+\usepackage{a4wide}
 
 % Uncomment some of the following if you use the features
 %
@@ -36,9 +30,6 @@
 
 % Surround parts of graphics with box
 % \usepackage{boxedminipage}
-
-% Package for including code in the document
-\usepackage{listings}
 
 \usepackage[ruled,vlined]{algorithm2e}
 
@@ -68,7 +59,6 @@
 
 
 \begin{document}
-\lstset{language=erlang}
 
 \ifpdf
 \DeclareGraphicsExtensions{.pdf, .jpg, .tif}
@@ -81,48 +71,156 @@
 
 \section{Introduction}
 
-In this lab you will explore the software framework for the coursework
-assignment. It provides the component stack, node (process) configuration,
-and the fair-loss and stubborn link components. These components should be
-used as a template for your own components. You will build the perfect-link,
-a failure detector, and a reliable broadcast component.
+This lab introduces the software framework provided to help
+implement the algorithms described in the course \cite{cachin2011}.
+It will provide a foundation for implementing your project.
 
-\subsection{How to work} % (fold)
+You have been provided with an Erlang framework including a component model,
+node configuration, and the fair-loss and stubborn link components. Using the
+\emph{sl} module as a template, you will implement your own components: a
+perfect-link, failure detector, and broadcast component.
+
+\subsection{Working in groups} % (fold)
 \label{sub:how_to_work}
 
-Attempt the following exercises in the same pairs you will use for your graded
-coursework. It is expected that you will use code from this lab in your
-coursework.
+Where possible, work in the same pairs as for the project. Components built in
+this lab should be useful in building your project solution.
 
 % subsection how_to_work (end)
+
+\subsection{Installing Erlang} % (fold)
+\label{sub:installing_erlang}
+
+We suggest installing Erlang/OTP R16B or newer. Mac users should install
+a 32-bit build so that wxWidgets (gui) works. Source and binaries can be found at
+\url{https://www.erlang-solutions.com/downloads/download-erlang-otp} and
+\url{http://www.erlang.org/download.html}.
+
+% subsection installing_erlang (end)
 
 \subsection{Where to find help} % (fold)
 \label{sub:where_to_find_help}
 
-Erlang documentation can be found with Google, or at the reference
-manual\footnote{\url{http://www.erlang.org/doc/apps/stdlib/index.html}}, and
-its re-designed copy \url{http://erldocs.com}.
-For algorithms refer to the course slides and textbook \cite{cachin2011}.
-Also, ask the assistant.
-
-As for the coursework, it's ok to talk to the other students about how to
-solve the problems, but don't copy their code.
+Discuss problems with the assistant and the other students. However, don't
+copy their code. Erlang documentation can be found with Google, or at the
+reference
+manual \cite{manual_stdlib}\cite{manual_expressions} or
+\url{http://erldocs.com}. Algorithms can be found in the course slides and
+textbook \cite{cachin2011}.
 
 % subsection where_to_find_help (end)
 
-\section{Framework overview} % (fold)
+
+
+\section{Framework introduction} % (fold)
 \label{sec:framework_overview}
 
-This section briefly explains the role of key framework files.
+This section briefly explains the role of key framework files. All files can
+be found in the src directory. Concentrate on sl.erl, which provides
+an example of implementing an algorithm from \cite{cachin2011}'s programming
+model. The other files may be treated as black boxes for the lab and
+project.
 
-\subsection{Components} % (fold)
-\label{sub:components}
-
-We provide the two basic point-to-point communication abstractions,
+We provide two basic point-to-point communication abstractions,
 \emph{fll} and \emph{sl}. You should use \emph{sl} as a template for your
 higher-layer components.
 
-\subsubsection{fll.erl Fair-loss link} % (fold)
+\subsection{Programming with the framework} % (fold)
+\label{sub:api}
+
+In order to implement your own components (modules):
+
+\begin{itemize}
+
+\item Create a new module sharing the name of your component, e.g. module(pl)
+in file `pl.erl'
+
+\item Copy the \verb!-export! directive, \verb!start_link! and \verb!stop!
+functions, and base-case of \verb!upon_event! which handles events not
+matching any other
+
+\item Copy the state record definition, and change it to suit your component
+(or make it empty, \verb!-record(state, {}).!)
+
+\item Implement the uses function, and include the components your module
+depends on (as listed in its algorithm)
+
+\item Reproduce the code from sl if you have initialisation or timeout events
+
+\item Implement the messaging events and triggers required by the algorithm
+
+\end{itemize}
+
+Some key functions you will use:
+
+\begin{description}
+  \item[stack:trigger] to send events to other components on the stack
+  \item[component:start\_timer(N)] request a timeout callback event every N milliseconds
+  \item[stack:nodes] to return $\Pi$, all nodes in the system, in sorted order
+
+  \item[stack:start\_link] launch the stack in a running Erlang process
+
+  \item[stack:add\_component] add a component (and its dependencies) to the
+  stack. Used components auto-loaded if missing
+
+  \item[stack:connect] connect to a remote Erlang process, globally updating $\Pi$.
+      The value connected to should be the result of running node() on that process, or the name the remote server was launched with
+\end{description}
+
+% subsection api (end)
+
+\subsection{Compiling} % (fold)
+\label{sub:compiling_and_running_the_program}
+
+From the project directory, build your code with \verb!./rebar clean compile!.
+To also run tests, \verb!./rebar clean compile eunit!.
+
+You will need to recompile each time you make changes, and for simplicity we
+suggest shutting down and restarting all processes each time you recompile.
+To save typing you can paste multiple lines of commands into the erl shell at
+a time, also multiple commands on one line, just remember to follow each
+statement with a ``.''.
+
+
+\subsection{Running your stack} % (fold)
+\label{sub:running_your_stack}
+
+% subsection running_your_stack (end)
+
+To test with Erlang erl terminal shells, for each process (node):
+
+\begin{itemize}
+
+  \item Open a new terminal and cd to the project directory
+
+  \item \verb!erl -sname 'n1@localhost'! -- launch erlang processes (for n1..5)
+
+  \item \verb!cd(ebin).! -- Move the Erlang process pwd to your binaries directory
+
+  \item \verb!stack:start_link().! -- Spawn the stack
+
+  \item \verb!stack:connect('n1@localhost').! -- connect to the cluster; check
+  with \verb!stack:nodes().!
+
+  \item \verb!stack:add_component(pl).! -- launch the top-level stack component
+
+\end{itemize}
+
+Now pick a terminal, remembering that each is a different process in the
+distributed system, and start manually issuing events. For example:
+
+\begin{itemize}
+  \item Send a message with \emph{sl}: \verb!stack:trigger({sl, send, lists:nth(1, stack:nodes()), knock_knock}).!
+  \item Broadcast with \emph{beb}: \verb!stack:trigger({beb, send, hejhej}).!
+\end{itemize}
+
+Add some \verb!io:format! statements in component delivery events to see
+whether your messages are arriving at each of your nodes. Remember to
+recompile.
+
+% subsection compiling_and_running_the_program (end)
+
+\subsection{fll.erl Fair-loss link} % (fold)
 \label{ssub:fll_erl}
 
 Fair-loss links provide best-effort point-to-point communication between
@@ -130,47 +228,37 @@ discrete processes (nodes). Recall that while this link is unreliable, it is
 used by the higher level components, which provide stronger abstractions such
 as reliable delivery.
 
-Hopefully you will find that the component's implementation looks very
-similar to the algorithm presented in the course book \cite{cachin2011}.
-
-The details of inter-node communication have been abstracted away in the stack
-module. You should assume best-effort (unreliable) communication, as described
-for the \emph{fll} component. That is, a message may fail to arrive, and no ordering
+The details of inter-node communication are handled by the stack module. You
+should assume best-effort (unreliable) communication, as described for the
+\emph{fll} component. That is, a message may fail to arrive, and no ordering
 guarantees or time bounds are provided, but some messages will arrive --
 unreliable, but not useless\footnote{Erlang's primitives build on TCP and tend
 to give stronger guarantees, so for testing purposes we have injected
 additional problems by randomly dropping and delaying sent and received
 transmissions.}.
 
-If you'd like to use \lstinline!io:format! yourself to make your program more
-chatty, refer to the
-documentation\footnote{\url{http://erlang.org/doc/man/io.html\#format-1}} or
-the side note at \url{http://learnyousomeerlang.com/syntax-in-functions} to
-find out about the string substitution characters \lstinline!'~w~n'!.
-
 % subsubsection fll_erl (end)
 
-\subsubsection{sl.erl Stubborn link} % (fold)
+\subsection{sl.erl Stubborn link} % (fold)
 \label{ssub:sl_erl_stubborn_link}
 
 Stubborn links build on fair-loss links by guaranteeing that a sent message
-will eventually arrive at its destination – in fact it will arrive many times.
+will eventually arrive at its destination; in fact it will arrive many times.
 
-Here you can see how stack:trigger is used to create the stack events
-prescribed by the book's algorithms. Here it's used to request that \emph{fll} sends
-a message on its behalf. These are asynchronously broadcast to the other components,
-which will act on them or ignore them according to (your implementation of)
-their algorithm.
+Note how stack:trigger is used to create the events prescribed by the book's
+algorithms. Here it's used to request that \emph{fll} sends a message on its
+behalf. These are asynchronously broadcast to the other components, which will
+act on them or ignore them according to (your implementation of) their
+algorithm.
 
 Note how a timer is used to periodically trigger the component's timeout event
 and re-send the messages. Also see the sets documentation for methods that
 might be useful in your own code. You might prefer lists, or some other
 structure\footnote{\url{http://learnyousomeerlang.com/a-short-visit-to-common-data-structures}}.
 
-In case you're not familiar with higher-order functions, \lstinline!sets:fold!
-is used to execute the given function once for each set element. We don't use
-the returned accumulator value as here we were only interested in fold as an
-iterator. The lists library also provides map and some other functions.
+In case you're not familiar with higher-order functions, sets:fold is used to
+execute the given function once for each set element (the result is
+discarded). The different data structures provide their own functions.
 
 As a final point, examine the tagging of sent messages and filtering of
 received messages. This is important, as without the means to identify which
@@ -180,55 +268,51 @@ point-to-point messaging rather than broadcasting of events within the stack.
 Here we retain the notion that all events are seen by all components, and
 rely on them structuring and filtering their messages accordingly.
 
+% \subsection{Garbage collecting terminated algorithm retransmissions}
+% \label{ssub:halting_retransmission_on_algorithm_termination}
+%
+% Having found a way to halt the retransmission of individual messages, can you
+% think of a way to modify this to work on sets of messages? Once an algorithm
+% using the links has terminated execution there is no need to continue
+% retransmitting its messages. For now don't worry about algorithm termination,
+% simply demonstrate that you can group messages by an integer identifier (or
+% similar) and have them all stop being retransmitted. That is to say, you
+% should modify ``If a correct process p sends a message m once to a correct
+% process q, then q delivers m an infinite number of times'' to ``If a correct
+% process p sends a message m once to a correct process q as part of an
+% algorithm a, then q delivers m one or more times before a terminates, and
+% infinitely often if a does not terminate''.
+
+
+
 % subsubsection sl_erl_stubborn_link (end)
-
-% subsection components (end)
-
-
 
 \subsection{Internals} % (fold)
 \label{sub:internals}
 
-In order to understand the implementation of the provided abstraction you
-may find the following useful:
-\url{http://www.erlang.org/doc/man/gen_server.html}\\
-\url{http://learnyousomeerlang.com/clients-and-servers}
+The following shouldn't be needed to complete the lab, but may be of interest.
+In order to understand the inner workings of the implementation (not required)
+you may find the following useful: \cite{man_gen_server},
+\cite{lyse_client_server}. The stack module is responsible for loading
+components, propagating events within the stack, and ensuring the stack is the
+unit-of-failure: when one component crashes the entire stack stops.
 
-\subsubsection{stack.erl} % (fold)
-\label{sub:stack_erl}
-
-The stack module is responsible for loading components, propagating events
-within the stack, and ensuring the stack is the unit-of-failure: when one
-component crashes the entire stack stops.
-
-% subsection stack_erl (end)
-
-\subsubsection{component.erl} % (fold)
-\label{sub:component_erl}
-
-The component module is an abstraction to hide some irrelevant implementation
-details from you regarding their startup and the propagation and receipt of
-stack events.
-
-% subsection component_erl (end)
+The component module is an abstraction to hide the implementation details of
+component startup and the receiving of events.
 
 % subsection internals (end)
 
+% section framework_overview (end)
 
 
-\section{Lab activity} % (fold)
-\label{sec:lab_activity}
 
-The following exercises will have you implement your first components with the
-framework.
 
-\subsection{Implement perfect links} % (fold)
+\section{Implement perfect links} % (fold)
 \label{sub:implement_pl}
 
 In a new file, \verb!src/pl.erl!, implement the ``Perfect Link'' abstraction
-with Algorithm~\ref{algo:pl}. Use the \emph{sl} component as a template.
-
-%TODO: insert the algorithm here
+with Algorithm~\ref{algo:pl}, ``Eliminate Duplicates''. Use the \emph{sl}
+component as a template.
 
 % \begin{verbatim}
 % Algorithm 2.2: Eliminate Duplicates
@@ -258,20 +342,20 @@ with Algorithm~\ref{algo:pl}. Use the \emph{sl} component as a template.
   \KwUses{StubbornPointToPointLinks, instance sl}.\\
   \BlankLine
 
-  \KwEvent{$<$ pl, Init $>$}{
-    $delivered := emptyset$\;
+  \KwEvent{$<$ pl, init $>$}{
+    $delivered := \emptyset$\;
   }
   \BlankLine
 
-  \KwEvent{$< pl, Send | q, m >$}{
-    \KwTrigger{$< sl, Send | q, m >$}\;
+  \KwEvent{$< pl, send, q, m >$}{
+    \KwTrigger{$< sl, send, q, m >$}\;
   }
   \BlankLine
 
-  \KwEvent{$< sl, Deliver | p, m >$}{
+  \KwEvent{$< sl, deliver, p, m >$}{
     \uIf{m in delivered}{
       $delivered := delivered \union \{m\}$\;
-      \KwTrigger{$< pl, Deliver | p, m>$}\;
+      \KwTrigger{$< pl, deliver, p, m>$}\;
     }
   }
   \BlankLine
@@ -279,10 +363,18 @@ with Algorithm~\ref{algo:pl}. Use the \emph{sl} component as a template.
  \label{algo:pl}
 \end{algorithm}
 
-The algorithm is theoretically sound, but in practice we have some problems
-to resolve.
 
-\subsubsection{Duplicate messages} % (fold)
+\subsection{Maintain no-creation with shared components} % (fold)
+\label{ssub:no_creation_with_multiple_stack_algorithms}
+
+Modify the algorithm so that \emph{pl} only delivers its own messages, maintaining
+the no-creation property. It should ignore \emph{sl} deliver events for messages not
+sent by \emph{pl} (where \emph{pl} may be itself, or the \emph{pl} component
+on another node). \emph{Hint: look for something simple, you don't need to
+modify the framework}.
+
+
+\subsection{Duplicate messages} % (fold)
 \label{ssub:duplicate_messages}
 
 Sometimes we want to send the same message twice. Take, for example, the
@@ -290,54 +382,173 @@ perfect failure detector's \emph{heartbeat\_reply} message. The message
 content is identical each time a heartbeat reply is sent, but the messages are
 independent. Each time a heartbeat is sent by \emph{pl} it should be delivered
 exactly once. If the same message content is sent twice it should be
-delivered twice, otherwise the failure detector would suspect all nodes at
+delivered exactly twice, otherwise the failure detector would suspect all nodes at
 the second heartbeat. Messages should be distinguished by the act of sending
 them, not by their content.
 
 Modify the algorithm so that if two requests arrive for the same message
 the message is sent exactly twice. That is, each received send request
 produces a unique message even if the contents of the sent messages are equal.
+You may find
+\verb!make_ref()!\footnote{\url{http://erlang.org/doc/man/erlang.html\#make_ref-0}}
+useful for generating pseudo-random ids, but this may not be the best approach
+if introducing FIFO ordering or garbage collection.
 
 % subsubsection duplicate_messages (end)
 
 
-\subsubsection{Maintain no-creation with shared components} % (fold)
-\label{ssub:no_creation_with_multiple_stack_algorithms}
+\subsection{Best-effort broadcast} % (fold)
+\label{sub:best_effort_broadcast}
 
-Modify the algorithm so that \emph{pl} only delivers its own messages, maintaining
-the no-creation property. It should ignore \emph{sl} deliver events for messages not
-sent by \emph{pl} (where \emph{pl} may be itself, or the \emph{pl} component
-on another node). You may find
-\verb!make_ref()!\footnote{\url{http://erlang.org/doc/man/erlang.html\#make_ref-0}}
-useful for generating pseudo-random ids.
+Having implemented \emph{pl}, implement the best-effort broadcast component,
+\emph{beb}. Test it by sending messages from the erl terminal to several
+nodes.
+
+% subsection best_effort_broadcast (end)
 
 % subsubsection no_creation_with_multiple_stack_algorithms (end)
+
 
 % subsection implement_pl (end)
 
 
-\subsection{Implement \emph{p}, the perfect failure detector} % (fold)
-\label{sub:implement_p}
+\section{Extra: failure detector, leader election, reliable broadcast} % (fold)
+\label{sub:further_work}
 
-% subsection implement_p (end)
+Having demonstrated your perfect links and best-effort broadcast to the
+assistant, implement the perfect failure detector.
+
+In a new file, \verb!src/p.erl!, implement the ``Perfect Failure Detector''
+abstraction with Algorithm~\ref{algo:p}, ``Exclude on Timeout''. Test the
+failure detector by connecting two or more nodes running \emph{P} and
+observing the behaviour of the other nodes when you shut one down by
+\verb!stack:stop()! or somehow killing the Erlang process.
+
+Use your failure detector to implement lazy reliable broadcast and perfect
+leader election.
 
 
-\subsection{Implement best-effort and lazy reliable broadcast} % (fold)
-\label{sub:implement_best_effort_and_reliable_broadcast}
+\begin{algorithm}[htbp]
+  \SetKw{KwImplements}{Implements: }{}{}
+  \SetKw{KwUses}{Uses: }{}{}
+  \SetKw{KwTrigger}{trigger}
+  \SetKwProg{KwEvent}{upon event}{ do}{}
 
-% subsection implement_best_effort_and_reliable_broadcast (end)
+  \SetAlgoNoLine % \SetAlgoLined
+  \KwImplements{PerfectFailureDetector, instance p}.\\
+  \KwUses{PerfectPointToPointLinks, instance pl}.\\
+  \BlankLine
 
-\subsection{Implement Eventually P, and revisit the broadcast algorithms} % (fold)
-\label{sub:implement_eventually_p_and_revisit_the_broadcast_algorithms}
+  \KwEvent{$<$ p, Init $>$}{
+    $alive := \Pi$\;
+    $detected := \emptyset$\;
+    $starttimer(\Delta)$;
+  }
+  \BlankLine
 
-Consider how Lazy Reliable Broadcast will function using eventually-P.
-Implement Eager Reliable Broadcast.
+  \KwEvent{$<Timeout>$}{
+    \ForEach{$proc\in\Pi$}{
+      \uIf{$(proc \notin alive) \land (proc \notin detected) $}{
+        $detected := detected \union \{proc\}$\;
+        \KwTrigger{$< p, crash, proc>$}\;
+      }
+      \KwTrigger{$< pl, send, proc, heartbeat\_request >$}\;
+    }
+    $alive := \emptyset$\;
+    $starttimer(\Delta)$\;
+  }
+  \BlankLine
 
-% subsection implement_eventually_p_and_revisit_the_broadcast_algorithms (end)
+  \KwEvent{$<pl, deliver, q, heartbeat\_request>$}{
+    \KwTrigger{$<pl, send, q, heartbeat\_reply>$};
+  }
+  \BlankLine
+
+  \KwEvent{$<pl, deliver, proc, heartbeat\_reply>$}{
+    $alive := alive \union \{proc\}$;
+  }
+
+ \caption{Exclude on Timeout, by Cachin et al.}
+ \label{algo:p}
+\end{algorithm}
+
+
 
 % section lab_activity (end)
 
-% section framework_overview (end)
+
+
+
+
+\section{Some Erlang pointers} % (fold)
+\label{sec:some_erlang_pointers}
+
+\subsection{Uppercase and lowercase terms} % (fold)
+\label{sub:uppercase_and_lowercase_terms}
+
+Lowercase terms are atoms, uppercase for variables. Function and module names
+are atoms. Refer to \cite{manual_expressions}.
+
+% subsection uppercase_and_lowercase_terms (end)
+
+\subsection{Commas, semicolons, full-stops, conditional logic} % (fold)
+\label{sub:commas_semicolons_full_stops}
+
+As new Erlang programmers you will likely fall over the syntax rules for `,'
+`;' `.' while writing your program. The compiler error messages can help to
+find these problems. Also, refer to the manual \cite{manual_functions}, to
+\cite{lyse_function_syntax}, and look at existing code.
+
+Be sure to check how if and case statements work before using them. They
+return values, like Ruby but unlike C. Case statements seem the most general,
+and it is sufficient to learn to use those. Erlang case statements have little
+in common with their C or Java counterpart, and do not execute multiple
+cases by ``falling-through''.
+
+% subsection commas_semicolons_full_stops (end)
+
+\subsection{Print to terminal} % (fold)
+\label{sub:debug_printing}
+
+To make your program more chatty, perhaps for execution tracing and debugging,
+you will find io:format useful. Refer to
+the documentation\footnote{\url{http://erlang.org/doc/man/io.html\#format-1}}
+or the side note at \cite{lyse_function_syntax} to
+find out about the string substitution characters \verb!~w~n!.
+
+% subsection debug_printing (end)
+
+\subsection{Using the debugger} % (fold)
+\label{sub:using_the_debugger}
+
+To use the graphical debugger \cite{manual_debugger}, ensure
+\verb!{erl_opts, [debug_info]}.! is present in the rebar.config file.
+Having compiled with debug flags, in the erl terminal run \verb!debugger:start().!
+then in \emph{Module$\rightarrow$Interpret} navigate to the src directory and select the
+module(s) you want to observe.
+
+% subsection using_the_debugger (end)
+
+\subsection{Unit testing} % (fold)
+\label{sub:unit_testing}
+
+Automated testing is not required for the project, but you may find it useful.
+If you would like to unit test your components you should look at the test
+framework
+EUnit\footnote{\url{http://www.erlang.org/doc/apps/eunit/chapter.html}}, and
+the mocking library meck\footnote{\url{https://github.com/eproxus/meck}}. For
+advice on where to write the tests and how to structure them also see
+\cite{mochimedia_test} and \cite{so_eunit_q}.
+
+You would then call your component's \verb!upon_event! function and make
+assertions about the calls it makes to the (mocked) stack:trigger function,
+and any other things of interest. You can run the tests with
+\verb!./rebar eunit!
+
+% subsection unit_testing (end)
+
+% section some_erlang_pointers (end)
+
 
 
 
@@ -351,9 +562,60 @@ Implement Eager Reliable Broadcast.
   2nd Edition,
   2011.
 
+% \bibitem{cesarini_thompson_2009}
+% Francesco Cesarini and Simon Thompson
+% \emph{Erlang Programming, A Concurrent Approach to Software Development}
+% O'Reilly Media
+% 2009.
+
+\bibitem{manual_stdlib}
+  \emph{Erlang STDLIB Reference Manual}\
+  \url{http://www.erlang.org/doc/apps/stdlib/index.html}
+
+\bibitem{manual_expressions}
+  \emph{Erlang Reference Manual}
+  User's Guide, Expressions\
+  \url{http://erlang.org/doc/reference_manual/expressions.html}.
+
+\bibitem{manual_functions}
+  \emph{Erlang Reference Manual}
+  User's Guide, Function Declaration Syntax,\
+  \url{http://erlang.org/doc/reference_manual/functions.html}
+
+\bibitem{manual_debugger}
+  \emph{Erlang Reference Manual}
+  Debugger
+  User's Guide\
+  \url{http://www.erlang.org/doc/apps/debugger/debugger_chapter.html}
+
+
+
+\bibitem{lyse_function_syntax}
+  \emph{Learn you some Erlang},
+  Syntax in functions\
+  \url{http://learnyousomeerlang.com/syntax-in-functions}
+
+\bibitem{man_gen_server}
+  \emph{Erlang Reference Manual}
+  User's Guide, Generic Server Behaviour
+  \url{http://www.erlang.org/doc/man/gen_server.html}
+
+\bibitem{lyse_client_server}
+  \emph{Learn you some Erlang},
+  Clients and servers
+  \url{http://learnyousomeerlang.com/clients-and-servers}
+
+\bibitem{mochimedia_test}
+  \emph{meck and eunit best practices},
+  Mochilabs
+  \url{http://labs.mochimedia.com/archive/2011/06/13/meck-eunit-best-practices/}
+
+\bibitem{so_eunit_q}
+  \emph{Best practices/conventions for writing Erlang unit tests using eunit},
+  Stackoverflow question
+  \url{http://stackoverflow.com/questions/6449681/best-practices-conventions-for-writing-erlang-unit-tests-using-eunit}
+
 \end{thebibliography}
-
-
 
 \end{document}
 

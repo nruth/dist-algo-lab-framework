@@ -26,8 +26,8 @@
 %\usepackage{subfigure}
 
 % More symbols
-% \usepackage{amsmath}
-% \usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amssymb}
 %\usepackage{latexsym}
 \newcommand{\union}{\cup}
 
@@ -85,13 +85,13 @@ They have to be careful that nothing goes wrong, as a major rival,
 Babble, will be watching carefully for mistakes to discuss over lunch with
 their customers.
 
-Unfortunately for Shamsung, their robotic dancers are rather temperamental,
-and prone to breakdown before a show, or spectacular (often explosive) failure
-during a performance. This is unfortunate because, while naively assuming
-their robots would live forever, the team's software engineers decided one
-robot would lead, deciding on a dance routine and telling the other robots
-which steps to perform. This is not predetermined: the robots decide the next
-step just before taking it.
+Unfortunately for Shamsung, their robotic dancers turned out to be rather
+temperamental, and are prone to spectacular -- often explosive -- failure
+during performances. This is unfortunate because the team's software engineers
+decided one robot would lead, deciding on a dance routine and telling the
+other robots which steps to perform. This is not predetermined: the robots
+decide the next step just before taking it. They had assumed their robots
+would live forever.
 
 In order to keep the show moving we need to substitute this
 central-point-of-failure with a suitable alternative. In this assignment you
@@ -110,47 +110,76 @@ Management's specification for the dancers:
 
   - (after the show the producer wants a print-out of the dance routine (to sell at auction))
   - (no two robots can be out-of-sync by more than 10 seconds.)
-  - (create an application layer which selects a robot from the group to 
-      display on the local TV screen. It should announce a robot every 10 seconds, 
+  - (create an application layer which selects a robot from the group to
+      display on the local TV screen. It should announce a robot every 10 seconds,
       and should eventually stop displaying crashed robots).
 
 
 
 
-\subsection{Installing Erlang and WX} % (fold)
-\label{sub:installing_erlang_and_wx}
 
-Be sure to install (or build) Erlang with wxWidgets for the graphical
-component of the assignment.
+\section{Dealing with delayed and lost messages} % (fold)
+\label{sec:dealing_with_unreliable_links}
 
-Mac users (10.8) can install 32-bit Erlang from
-\url{https://www.erlang-solutions.com/downloads/download-erlang-otp}.
+First of all we will assume no robot fails, but will introduce losses and
+delays in the point-to-point links. To see the problem, execute the program
+with the fll component's ``reliable'' state field set to false.
 
-
-
-% subsection installing_erlang_and_wx (end)
-
-
-
-\subsection{Where to find help} % (fold)
-\label{sub:where_to_find_help}
-
-In order to find documentation for Erlang functions, try Google, the reference
-manual\footnote{\url{http://www.erlang.org/doc/apps/stdlib/index.html}}, and
-possibly \url{http://erldocs.com}.
-To better understand the algorithms, refer to the course slides or textbook
-\cite{cachin2011}.
-
-You can email me questions about your design and problems with Erlang. Please
-also arrange by email if you want to meet in person.
-
-It's ok to talk to the other students about how to solve the problems, but
-don't copy their code.
-
-% subsection where_to_find_help (end)
+You will see that, unlike when it was set to true, the robots soon move out
+of sequence. In this first exercise you should fix this by guaranteeing
+delivery and ordering the messages.
 
 
 
+% section dealing_with_unreliable_links (end)
+
+
+
+
+
+
+
+\section{Assumptions} % (fold)
+\label{sec:assumptions}
+
+\subsection{Crash-stop failures} % (fold)
+\label{sub:crash_stop_failures}
+
+Once a robot has exploded it will not recover. There are no Byzantine robots
+in the group (we hope).
+
+% subsection crash_stop_failures (end)
+
+\subsection{Broadcast, failure detection and lost messages} % (fold)
+\label{subsec:lost_messages}
+
+Your design may require the use of a failure detector. This may become
+problematic in broadcast algorithms where correct robots are falsely suspected
+if you use \emph{$\Diamond$P} or set the timeout of \emph{P} too low.
+Reasoning about \emph{$\Diamond$P} is left as an extension task. Start with
+\emph{P}, and consider the following for selecting its time bound.
+
+In order to select a time bound, determine how long is a reasonable time for
+a perfectly delivered message to be sent (heartbeat request) and returned
+(heartbeat response) such that some number of message losses is allowed.
+
+1 in 10 messages are lost by the \emph{fll} connecting the robots. Reason
+probabilistically about these message losses, determine how many you are
+prepared to say will never in-practice be lost in a row, and take that as the
+maximum retransmissions required by your perfect link abstraction to achieve
+delivery. Include this reasoning in your report. You may find the performance
+subheadings of \cite{cachin2011}'s algorithm descriptions useful in
+determining the time taken.
+
+% If using the perfect failure detector, set its timeout so that 2 messages can
+% be lost without failure being detected. The maximum round-trip time is 5
+% seconds, but you must also consider the retransmission delay of \emph{sl}.
+
+% subsection lost_messages (end)
+
+
+
+% section assumptions (end)
 
 
 
@@ -159,33 +188,14 @@ don't copy their code.
 \section{Optimising the perfect-link abstraction} % (fold)
 \label{sub:optimising_pl}
 
-The \emph{pl}, \emph{sl}, \emph{fll} messaging stack is theoretically correct, but expensive.
-In the following you'll optimise your stack to send fewer
-messages and consider how it changes the abstraction's properties.
+The \emph{pl}, \emph{sl}, \emph{fll} messaging stack is theoretically correct,
+but expensive in practice. Can you modify it so that fewer messages are sent,
+without risking that messages are not delivered?
 
-\subsection{Weakening stubborn delivery by halting retransmission} % (fold)
-\label{ssub:weakening_stubborn_delivery_by_halting_retransmission}
+Can you think of a way to safely garbage-collect the stored and retransmitted
+messages?
 
-Does the ``stubborn delivery'' property make sense in practice? Can you think
-of a time when it's safe to stop retransmitting the same message? How would
-you implement it?
 
-% subsubsection weakening_stubborn_delivery_by_halting_retransmission (end)
-
-\subsection{Garbage collecting terminated algorithm retransmissions} % (fold)
-\label{ssub:halting_retransmission_on_algorithm_termination}
-
-Having found a way to halt the retransmission of individual messages, can you
-think of a way to modify this to work on sets of messages? Once an algorithm
-using the links has terminated execution there is no need to continue
-retransmitting its messages. For now don't worry about algorithm termination,
-simply demonstrate that you can group messages by an integer identifier (or
-similar) and have them all stop being retransmitted. That is to say, you
-should modify ``If a correct process p sends a message m once to a correct
-process q, then q delivers m an infinite number of times'' to ``If a correct
-process p sends a message m once to a correct process q as part of an
-algorithm a, then q delivers m one or more times before a terminates, and
-infinitely often if a does not terminate''.
 
 % subsubsection halting_retransmission_on_algorithm_termination (end)
 
@@ -205,5 +215,68 @@ with the algorithms and your changes.
 
 
 
+
+
+
+
+\section{Practical details} % (fold)
+\label{sec:practical_details}
+
+
+\subsection{Installing Erlang with WX} % (fold)
+\label{sub:installing_erlang_and_wx}
+
+Be sure to install (or build) Erlang with wxWidgets for the graphical
+component of the assignment.
+
+Mac users (10.8) can install 32-bit Erlang from
+\url{https://www.erlang-solutions.com/downloads/download-erlang-otp}. This
+company's builds may also be useful for other platforms.
+
+
+
+% subsection installing_erlang_and_wx (end)
+
+
+
+\subsection{Where to find help} % (fold)
+\label{sub:where_to_find_help}
+
+In order to find documentation for Erlang functions, try Google, the reference
+manual\footnote{\url{http://www.erlang.org/doc/apps/stdlib/index.html}}, and
+possibly \url{http://erldocs.com}.
+To better understand the algorithms, refer to the course slides or textbook
+\cite{cachin2011}.
+
+You can email me questions about your design and problems with Erlang. Please
+email to arrange in-person meetings.
+
+It's ok to talk to the other students about how to solve the problems, but
+don't copy their code.
+
+% subsection where_to_find_help (end)
+
+
+
+% section practical_details (end)
+
+
+
+
+
+
+
+\begin{thebibliography}{9}
+
+\bibitem{cachin2011}
+  C. Cachin, R. Guerraoui, and L. Rodrigues,
+  \emph{Introduction to Reliable and Secure Distributed Programming}.
+  Springer-Verlag, Berlin
+  2nd Edition,
+  2011.
+
+\end{thebibliography}
+
 \end{document}
+
 
