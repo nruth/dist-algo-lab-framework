@@ -40,7 +40,7 @@ connect(Node) ->
   true = net_kernel:connect_node(Node).
 
 nodes() ->
-  [node()|erlang:nodes()].
+  lists:sort([node()|erlang:nodes()]).
 
 % returns the currently registered components
 query_components() ->
