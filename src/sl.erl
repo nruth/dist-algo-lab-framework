@@ -46,6 +46,7 @@ upon_event({fll, deliver, SenderNodeP, {sl, Msg}}, State) ->
 %%   io:format("sl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
 %%   State;
 
+% base case, for events this module is not interested in
 upon_event(_Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
   State.
