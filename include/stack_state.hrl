@@ -2,5 +2,6 @@
 -define(STACKSET, ordsets).
 
 -record(state, {
-  components = (?STACKSET):new()
+  components = (?STACKSET):new(),
+  nodes = []
 }).

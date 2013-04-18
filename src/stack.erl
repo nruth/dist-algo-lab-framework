@@ -37,10 +37,15 @@ stop() ->
   gen_server:call(?MODULE, stop).
 
 connect(Node) ->
-  true = net_kernel:connect_node(Node).
+  case undefined =/= whereis(Component) of
+    true ->
+      true = net_kernel:connect_node(Node);
+    false ->
+      error("Connect to cluster before starting stack")
+  end.
 
 nodes() ->
-  lists:sort([node()|erlang:nodes()]).
+  gen_server:call(?MODULE, nodes).
 
 % returns the currently registered components
 query_components() ->
@@ -59,7 +64,7 @@ transmit(DestinationNodeQ, Msg) ->
 
 % entry-point for newly spawned stack process
 init([]) ->
-  {ok, #state{}}.
+  {ok, #state{nodes = lists:sort([node()|erlang:nodes()])}}.
 
 terminate(normal, State) ->
   io:format("~w terminating stack.~n", [?MODULE]),
@@ -81,6 +86,10 @@ handle_call({register_component, Name}, _From, State) ->
 % return active stack components
 handle_call(get_components, _From, State) ->
   {reply, {components, State#state.components}, State};
+
+% return all nodes known at stack launch (including ones who have since crashed)
+handle_call(get_nodes, _From, State) ->
+  {reply, State#state.nodes, State};
 
 % shut down the stack
 handle_call(stop, _From, State) ->
