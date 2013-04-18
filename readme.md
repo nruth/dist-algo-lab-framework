@@ -6,6 +6,14 @@ how/why basis: http://learnyousomeerlang.com/designing-a-concurrent-application
 
 OTP template generator / build tool: https://github.com/basho/rebar/wiki/Getting-started
 
+# compiling debug info enabled code (for the debugger) with rebar
+
+set in rebar.config:
+
+  {erl_opts, [debug_info]}.
+
+
+
 # running rebar compiled code in the erl shell
 
   cd(ebin).
