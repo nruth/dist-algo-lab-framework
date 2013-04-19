@@ -42,9 +42,9 @@ upon_event({fll, deliver, SenderNodeP, {sl, Msg}}, State) ->
   stack:trigger({sl, deliver, SenderNodeP, Msg}),
   State;
 
-upon_event({sl, deliver, SenderNodeQ, Msg}, State) ->
-  %% io:format("sl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
-  State;
+%% upon_event({sl, deliver, _SenderNodeQ, _Msg}, State) ->
+%%   io:format("sl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
+%%   State;
 
 % base case, for events this module is not interested in
 upon_event(_Other, State) ->
