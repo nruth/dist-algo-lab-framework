@@ -250,7 +250,7 @@ don't copy their code.
 
 
 
-\section*{Problem 0: Setting the stage, the uncoordinated robots} % (fold)
+\section*{Problem 0: Setting the stage, the uncoordinated robots [1~point]} % (fold)
 \label{sec:section_name}
 
 We start by reproducing the naïve software, where no robot fails and no
@@ -264,7 +264,7 @@ It is possible that you will already observe strange behaviour. Think about
 the properties of \emph{beb}, and the way in which the robots are periodically
 broadcasting what they think should be the next dance move.
 
-\subsection*{Deliverables [1 point]} % (fold)
+\subsection*{Deliverables} % (fold)
 \label{sub:p0_deliverables}
 
 First we will look at your broadcast and point-to-point link code, and
@@ -281,7 +281,7 @@ observed or problems you have spotted with this design.
 
 
 
-\section*{Problem 1: Lost and delayed messages, disorganised dancing} % (fold)
+\section*{Problem 1: Lost and delayed messages, disorganised dancing [5~points]} % (fold)
 \label{sec:dealing_with_unreliable_links}
 
 Having reproduced the team's design, let's investigate how it will behave on
@@ -308,7 +308,7 @@ ordering problem.
 
 \end{enumerate}
 
-\subsection*{Deliverable [5 points]} % (fold)
+\subsection*{Deliverable} % (fold)
 \label{sub:p1_deliverable}
 
 Explain your solutions in your report. Aim for about one page.
@@ -338,7 +338,7 @@ to terminal.
 
 
 
-\section*{Problem 2: Failing nodes with a bounded (synchronous) network} % (fold)
+\section*{Problem 2: Failing nodes with a bounded (synchronous) network [4~points]} % (fold)
 \label{sec:problem_2_failing_nodes}
 
 To make matters worse, it turns out that the robots do not travel well.
@@ -382,7 +382,7 @@ the time taken.
 % subsection lost_messages (end)
 
 
-\subsection*{Deliverables [4 points]} % (fold)
+\subsection*{Deliverables} % (fold)
 \label{sub:p2_deliverable}
 
 Explain your solution, and parameters for your failure detector, if used, in
@@ -416,7 +416,7 @@ The \emph{fll} \verb!MAX_DELAY! will be 2500 ms, and \emph{sl}
 
 
 
-\section*{Problem 3: Failing nodes in partial synchrony} % (fold)
+\section*{Problem 3: Failing nodes in partial synchrony [5 points]} % (fold)
 \label{sec:problem_3_partial_synchrony}
 
 In the previous scenario we assumed an upper bound on the network latency, and
@@ -459,7 +459,7 @@ marking.
 % subsection difficulty_of_quorums_vs_diamond_p_ (end)
 
 
-\subsection*{Deliverable [5 points]} % (fold)
+\subsection*{Deliverable} % (fold)
 \label{sub:p3_deliverable}
 
 Explain your solutions in your report in no more than 700 words.
@@ -493,7 +493,7 @@ what happens if all but one of the robots fails, will the dance complete?
 
 
 
-\section*{Extension: ``They've got no rhythm'' [5 points]} % (fold)
+\section*{Extension: ``They've got no rhythm'' [2~points]} % (fold)
 \label{sec:buffered_dance_routine}
 
 While we have solved the issue of the robots dancing the same steps in the
@@ -511,16 +511,14 @@ robots know what the next step is in advance of taking it, without violating
 the \emph{spontaneity} requirement.
 
 Document your design in no more than 2 pages. We will experiment with your
-implementation \emph{timed\_robots} according to your written report. The
-robots should still keep to the same sequence of dance moves, but now also
+implementation \emph{timed\_robots} according to your written report.
+The robots should still keep to the same sequence of dance moves, but now also
 move at regular intervals -- this will be checked visually.
 
 You may find it simpler to start with the assumption that no robots crash
 (problem 1), and gradually add the failures of problem 2 and 3. State which
-crash model your robots work for. The harder failure models are worth more
-points.
-
-
+crash model your robots work for. Look for a solution which is orthogonal to
+the failure modes and communication abstraction.
 
 % section buffered_dance_routine (end)
 
@@ -529,7 +527,7 @@ points.
 
 
 
-\section*{Extension: optimising the point-to-point links [2 points]} % (fold)
+\section*{Extension: Optimising the point-to-point links [2~points]} % (fold)
 \label{sec:extension_optimising_the_link_channels}
 
 The \emph{pl}, \emph{sl}, \emph{fll} messaging stack is theoretically correct,
@@ -554,7 +552,7 @@ optimisations in place).
 
 
 
-\section*{Extension: same-room dancing robots [2 points]} % (fold)
+\section*{Extension: Same-room dancing robots [2~points]} % (fold)
 \label{sec:extension_same_room_dancing_robots}
 
 Consider again the close-proximity robots in this video:
