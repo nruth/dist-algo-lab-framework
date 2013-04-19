@@ -60,7 +60,8 @@ upon_event({beb, deliver, _Sender, {dancerobot, Msg}}, State) ->
 
 % handle request query for the current steps and position of the robot
 upon_event({dancerobot, get_steps}, State) ->
-  io:format("Robot ~w~n***Position: ~w~n***Steps:~w~n", [node(), State#state.robot, State#state.steps]);
+  io:format("Robot ~w~n***Position: ~w~n***Steps:~w~n", [node(), State#state.robot, State#state.steps]),
+  State;
 
 upon_event(_Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
