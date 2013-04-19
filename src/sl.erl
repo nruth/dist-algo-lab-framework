@@ -43,7 +43,7 @@ upon_event({fll, deliver, SenderNodeP, {sl, Msg}}, State) ->
   State;
 
 upon_event({sl, deliver, SenderNodeQ, Msg}, State) ->
-  io:format("sl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
+  %% io:format("sl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
   State;
 
 % base case, for events this module is not interested in

@@ -37,15 +37,16 @@ stop() ->
   gen_server:call(?MODULE, stop).
 
 connect(Node) ->
-  case undefined =/= whereis(Component) of
-    true ->
-      true = net_kernel:connect_node(Node);
-    false ->
+  case whereis(stack) of
+    undefined ->
+      true = net_kernel:connect_node(Node),
+      erlang:nodes();
+    _ ->
       error("Connect to cluster before starting stack")
   end.
 
 nodes() ->
-  gen_server:call(?MODULE, nodes).
+  gen_server:call(?MODULE, get_nodes).
 
 % returns the currently registered components
 query_components() ->
