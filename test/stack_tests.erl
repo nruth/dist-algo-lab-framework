@@ -28,7 +28,7 @@ start() ->
   spawn(fun() -> stack:start_link() end).
 
 stop(_) ->
-  ok = stack:stop().
+  ok.% = stack:stop().
 
 
 %%%%%%%%%%%%%%%%%%%%

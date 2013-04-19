@@ -197,6 +197,19 @@ statement with a ``.''.
 
 To test with Erlang erl terminal shells, for each process (node):
 
+\begin{verbatim}
+  # compile the software
+  ./rebar clean compile eunit
+
+  # Open a new terminal for each node and cd to the project directory
+  # for n1..nN-1 with N dancers, so change nN to n1 n2 n3 and so on
+  # replace sl with whichever component is on top, e.g. an application
+  erl -sname n1@localhost -pa ebin  -s stack boot sl
+\end{verbatim}
+
+
+Or the long version,
+
 \begin{enumerate}
 
   \item Compile the files, see \ref{sub:compiling_and_running_the_program}.
@@ -207,13 +220,12 @@ To test with Erlang erl terminal shells, for each process (node):
 
   \item \verb!stack:connect('n1@localhost').! -- interconnect the nodes, creating a cluster. Check with nodes(). Only needed once per node, new members are shared with others
 
-  \item \emph{No nodes can connect after this: run previous step on each first}
-
   \item \verb!stack:start_link().! -- launch the stack software.
 
   \item \verb!stack:add_component(sl).! -- launch the top-level stack component (\emph{sl} could be any component: \emph{pl}, \emph{beb}, your application component, ...)
 
 \end{enumerate}
+
 
 Now pick a terminal, remembering that each is a different process in the
 distributed system, and start manually issuing events. For example:
