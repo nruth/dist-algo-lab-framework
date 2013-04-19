@@ -15,7 +15,7 @@
 \usepackage[utf8]{inputenc}
 
 % Setup for fullpage use
-% \usepackage{fullpage}
+\usepackage{a4wide}
 
 % Uncomment some of the following if you use the features
 %
@@ -36,6 +36,10 @@
 
 % Package for including code in the document
 \usepackage{listings}
+\lstset{language=erlang}
+
+% prevent latex destroying ' and " which gives copy-paste code errors
+\usepackage{upquote}
 
 \usepackage[ruled,vlined]{algorithm2e}
 
@@ -59,13 +63,12 @@
 \usepackage{graphicx}
 \fi
 \title{LSINF2345 Assignment 2013: Dancing robots}
-\author{Nicholas Rutherford}
+\author{Nicholas Rutherford, Université catholique de Louvain}
 
 \date{April 2013}
 
 
 \begin{document}
-\lstset{language=erlang}
 
 \ifpdf
 \DeclareGraphicsExtensions{.pdf, .jpg, .tif}
@@ -76,60 +79,253 @@
 \maketitle
 
 
-\section{Introduction}
+\section*{Introduction}
 
-Shamshung's robotics team are deploying a new publicity campaign this year:
-georeplicated dancing robots. The robots will dance in 4 different venues
-simultaneously, connected by video, making up their own dance routine live.
-They have to be careful that nothing goes wrong, as a major rival,
-Babble, will be watching carefully for mistakes to discuss over lunch with
-their customers.
+Shamshung is a global electronics producer, priding itself on state-of-the-art
+technology. One of their directors recently discovered a video of dancing
+robots\footnote{\url{https://www.youtube.com/watch?v=4t1NWH6G1f0}}, and has
+decided to one-up their competitor. They've given the following specification:
 
-Unfortunately for Shamsung, their robotic dancers turned out to be rather
-temperamental, and are prone to spectacular -- often explosive -- failure
-during performances. This is unfortunate because the team's software engineers
-decided one robot would lead, deciding on a dance routine and telling the
-other robots which steps to perform. This is not predetermined: the robots
-decide the next step just before taking it. They had assumed their robots
-would live forever.
+\begin{itemize}
 
-In order to keep the show moving we need to substitute this
-central-point-of-failure with a suitable alternative. In this assignment you
-will design two (or more) solutions which keep the robots dancing using
-distributed algorithms from the course. You should explain your approach and
-provide a prototype implementation using the provided Erlang stack and
-dancing robot simulator.
+  \item[\emph{Entertaining}] The robots cannot stand still. They must eventually dance, then dance until the halting condition is met.
 
-Management's specification for the dancers:
+  \item[\emph{Halting}] The dance should stop at 100 steps.
 
-  - the robots will start from the same pose
-  - the robots will perform the same dance routine: the same steps in the same order,
-    as if it had been written down before the show and given to them
-  - no robot can miss a step: if one robot takes it they all take its
-  - all robots must finish in the same pose and the same place on the stage
+  \item[\emph{Coordination}] The robots start from the same position, and dance the same sequence: the same steps in the same order.
 
-  - (after the show the producer wants a print-out of the dance routine (to sell at auction))
-  - (no two robots can be out-of-sync by more than 10 seconds.)
-  - (create an application layer which selects a robot from the group to
-      display on the local TV screen. It should announce a robot every 10 seconds,
-      and should eventually stop displaying crashed robots).
+  \item[\emph{Completeness}] No correct robot can miss a step.
+
+  \item[\emph{Finishing position}] All correct robots must finish dancing in the same
+  pose and position.
+
+  \item[\emph{Improvisation}] The sequence of dance steps is created by the robots
+  \emph{during} each performance. It is not known beforehand.
+
+  \item[\emph{Spontaneity}] The robots can plan no more than 5 steps in advance, so we can change the song.
+
+\end{itemize}
+
+Shamshung's robotics team rose to the challenge, and produced a number of
+androids capable of dancing like The Village People, with the added
+ability to shrink and expand (but not bang?) their heads along to the music.
+
+A private screening for the director was a success, and led to a successful
+public performance at a local technology expo. The robots were a big hit, and
+as a reward for their hard work the robotics team were given a new challenge:
+world tour! However, there is a twist. Shamshung's head of telecoms research
+is a friend of the director in question, and convinced them that it is a great
+marketing opportunity for their video-conferencing and mobile comms products
+if they split the robots up and have them dancing together in different
+countries, connected live by video-conferencing!
+
+Naturally this led to a geo-replicated nightmare for the robot technicians,
+who watched in horror as the robots began to violate all but one of their
+specifications. Indeed, they were only able to keep their jobs by arguing that
+the robots were performing an elaborate, individualistic, contemporary dance.
+Some of the directors believed them. The others knew better, and hired you to
+find out what went wrong and fix it before the next show.
+
+
+% Shamshung's robotics team are deploying a new publicity campaign this year:
+% georeplicated dancing robots. The robots will dance in 4 different venues
+% simultaneously, connected by video, making up their own dance routine live.
+% They have to be careful that nothing goes wrong, as a major rival,
+% Babble, will be watching carefully for mistakes to discuss over lunch with
+% their customers.
+%
+% Unfortunately for Shamsung, their robotic dancers turned out to be rather
+% temperamental, and are prone to spectacular -- often explosive -- failure
+% during performances. This is unfortunate because the team's software engineers
+% decided one robot would lead, deciding on a dance routine and telling the
+% other robots which steps to perform. This is not predetermined: the robots
+% decide the next step just before taking it. They had assumed their robots
+% would live forever.
+%
+% In order to keep the show moving we need to substitute this
+% central-point-of-failure with a suitable alternative. In this assignment you
+% will design two (or more) solutions which keep the robots dancing using
+% distributed algorithms from the course. You should explain your approach and
+% provide a prototype implementation using the provided Erlang stack and
+% dancing robot simulator.
 
 
 
 
+\section*{Practical details} % (fold)
+\label{sec:practical_details}
 
-\section{Dealing with delayed and lost messages} % (fold)
+To familiarise yourself with the programming framework and basic abstractions
+be sure to complete the lab ``LSINF2345 Lab: Implementing the basic
+abstractions''.
+
+\subsection*{Running the software} % (fold)
+\label{sub:running_the_software}
+
+Note that you will need to implement some missing components (\emph{pl},
+\emph{beb}) before the software will run.
+
+\begin{verbatim}
+  # Open a new terminal and cd to the project directory
+  erl -sname 'n1@localhost' # for n1..nN with N dancers
+
+  % In each erl shell:
+  cd(ebin).
+  stack:connect('n1@localhost').
+
+  % Then, after all are connected, on each node
+  stack:start_link().
+  stack:add_component(dancing_robots).
+
+  % once are stacks are launched
+  dancing_robots:start_dance().
+\end{verbatim}
+
+
+% subsection running_the_software (end)
+
+\subsection*{Deliverables} % (fold)
+\label{sub:deliverables}
+
+Turn in a zip file containing your \emph{src}, \emph{include} and \emph{test}
+directories, and a PDF report. Word counts stated in the problems are soft
+limits, but try not to be too far off. Optionally, you may include up to 2
+pages worth of diagrams. A cover page is optional.
+
+Your software will be tested with 32-bit Erlang R16B.
+
+% subsection deliverables (end)
+
+\subsection*{Marking} % (fold)
+\label{sub:marking}
+
+The assignment is out of a maximum of 20 points. The points for each section
+are explained in their ``deliverables'' section. The main work is to complete
+problems 0-3, which are worth a total of 15 points. 1 discretionary point is
+available for a nicely presented report and implementation code. If you
+are careful with your program and submit a nice report you can get 16/20
+without attempting the extension work. Completing all of the extension tasks
+makes it possible to get a very good score without having perfect answers for
+every activity.
+
+% subsection subsection_name (end)
+
+
+\subsection*{Installing Erlang with wxWidgets} % (fold)
+\label{sub:installing_erlang_and_wx}
+
+Be sure to install (or build) Erlang with wxWidgets for the graphical
+component of the assignment, otherwise the program will not compile and you
+will get strange error messages when trying to run the stack.
+
+Mac users (10.8) should use 32-bit Erlang from
+\url{https://www.erlang-solutions.com/downloads/download-erlang-otp}. 64-bit
+Erlang's wxWidget library does not work on recent Mac OSes. This
+company also provides builds for other platforms.
+
+If there are problems please let me know well in advance of the deadline.
+That means install now and check wx works, even if you plan to procrastinate
+(not advised).
+
+% subsection installing_erlang_and_wx (end)
+
+
+\subsection*{Where to find help} % (fold)
+\label{sub:where_to_find_help}
+
+In order to find documentation for Erlang functions, try Google, the reference
+manual\footnote{\url{http://www.erlang.org/doc/apps/stdlib/index.html}}, and
+possibly \url{http://erldocs.com}.
+To better understand the algorithms, refer to the course slides or textbook
+\cite{cachin2011}.
+The assistant will announce their availability separately.
+It's ok to talk to the other students about how to solve the problems, but
+don't copy their code.
+
+% subsection where_to_find_help (end)
+
+
+
+% section practical_details (end)
+
+
+
+\section*{Problem 0: Setting the stage, the uncoordinated robots} % (fold)
+\label{sec:section_name}
+
+We start by reproducing the naïve software, where no robot fails and no
+special consideration has been given to broadcasting messages. That is, the
+designer had not studied distributed computing.
+
+Implement best-effort broadcast, \emph{beb}, and observe the behaviour of the
+dancing robots in the GUI for a number of processes of your choice.
+
+It is possible that you will already observe strange behaviour. Think about
+the properties of \emph{beb}, and the way in which the robots are periodically
+broadcasting what they think should be the next dance move.
+
+\subsection*{Deliverables [1 point]} % (fold)
+\label{sub:p0_deliverables}
+
+First we will look at your broadcast and point-to-point link code, and
+visually inspect the behaviour of your robots when reproducing the demo given
+during the lab. The robots should dance in a (mostly) synchronised fashion
+when losses and delays are turned off in \emph{fll}.
+
+Optionally, you can write no more than 150 words about any strange behaviour
+observed or problems you have spotted with this design.
+
+% subsection deliverables (end)
+
+% section section_name (end)
+
+
+
+\section*{Problem 1: Lost and delayed messages, disorganised dancing} % (fold)
 \label{sec:dealing_with_unreliable_links}
 
-First of all we will assume no robot fails, but will introduce losses and
-delays in the point-to-point links. To see the problem, execute the program
-with the fll component's ``reliable'' state field set to false.
+Having reproduced the team's design, let's investigate how it will behave on
+a more realistic network. We will simulate the delay and loss of messages by
+changing the ``reliable'' state variable of \emph{fll} from true to false.
+This introduces arbitrary transmission delays and occasional lost messages.
+Run the dancing robot  simulation again, and observe how its behaviour has
+changed. Are the invariants of the product specification maintained or
+violated?
 
-You will see that, unlike when it was set to true, the robots soon move out
-of sequence. In this first exercise you should fix this by guaranteeing
-delivery and ordering the messages.
+You will soon realise that message ordering is important to maintain the state
+of our robots (indeed, they are essentially a replicated-state-machine): the
+dance steps must be totally ordered across the robots.
 
+Keeping with the omission failure model, design two solutions to the total
+ordering problem.
+\begin{enumerate}
 
+  \item A nominated leader decides the dance steps, broadcasts them with a
+  point-to-point (but not global) ordering guarantee
+
+  \item Allow all robots to suggest dance steps, as before, but totally order
+  delivery and execution of their broadcasts
+
+\end{enumerate}
+
+\subsection*{Deliverable [5 points]} % (fold)
+\label{sub:p1_deliverable}
+
+Explain your solutions in your report. Aim for about one page.
+In particular, explain how you have addressed the new
+problems of dropped and delayed messages.
+
+Implement both of them in modified (renamed) copies of the
+\emph{dancing\_robots} module. Name them \emph{dancing\_leader} and
+\emph{dancing\_bcast}. Optionally, in a further 150 or fewer words, describe any
+interesting implementation details or challenges you faced.
+
+Your software will be tested by checking the finishing position and dance
+sequence of each robot in the group. You can access the steps and position
+with the event \verb!{dancerobot, get_steps}!, which currently prints them
+to terminal.
+
+% subsection deliverable (end)
 
 % section dealing_with_unreliable_links (end)
 
@@ -139,37 +335,45 @@ delivery and ordering the messages.
 
 
 
-\section{Assumptions} % (fold)
-\label{sec:assumptions}
 
-\subsection{Crash-stop failures} % (fold)
-\label{sub:crash_stop_failures}
 
-Once a robot has exploded it will not recover. There are no Byzantine robots
-in the group (we hope).
 
-% subsection crash_stop_failures (end)
+\section*{Problem 2: Failing nodes with a bounded (synchronous) network} % (fold)
+\label{sec:problem_2_failing_nodes}
 
-\subsection{Broadcast, failure detection and lost messages} % (fold)
+To make matters worse, it turns out that the robots do not travel well.
+Whatever the problem is, it has made the dancers rather temperamental, and
+prone to spectacular -- even explosive -- failure. The engineers are reluctant
+to discuss this, so it's not clear which or how many robots will fail during
+a performance. Despite this, the show must go on.
+
+Modify one of your problem 1 solutions to survive failing robots. Assume
+fail-stop (crash-stop) failures. Once a robot has exploded it will not
+recover. There are no Byzantine robots in the group (we hope).
+
+
+\subsection*{Broadcast, failure detection and lost messages} % (fold)
 \label{subsec:lost_messages}
 
-Your design may require the use of a failure detector. This may become
-problematic in broadcast algorithms where correct robots are falsely suspected
-if you use \emph{$\Diamond$P} or set the timeout of \emph{P} too low.
-Reasoning about \emph{$\Diamond$P} is left as an extension task. Start with
-\emph{P}, and consider the following for selecting its time bound.
+Your design may require the use of a failure detector. This may cause problems
+in broadcast algorithms if correct robots are falsely suspected due to setting
+the timeout of \emph{P} too low.
 
-In order to select a time bound, determine how long is a reasonable time for
-a perfectly delivered message to be sent (heartbeat request) and returned
-(heartbeat response) such that some number of message losses is allowed.
+In order to select a time bound for \emph{P}, determine how long is a
+reasonable time for a perfectly delivered message to be sent (heartbeat
+request) and returned (heartbeat response) such that some number of message
+losses is allowed.
 
-1 in 10 messages are lost by the \emph{fll} connecting the robots. Reason
-probabilistically about these message losses, determine how many you are
-prepared to say will never in-practice be lost in a row, and take that as the
+For this problem you may assume a synchronous network: an upper bound of 2.5
+seconds on a single message's delivery, so 5 seconds round-trip time without
+losses. However, 1 in 10 messages are lost by the \emph{fll} connecting the
+robots. Reason probabilistically about these message losses, select a number
+of messages-in-a-row you are prepared to say will never be lost (say, 3
+successive omission failures) by a correct process, and take that as the
 maximum retransmissions required by your perfect link abstraction to achieve
 delivery. Include this reasoning in your report. You may find the performance
-subheadings of \cite{cachin2011}'s algorithm descriptions useful in
-determining the time taken.
+sections of \cite{cachin2011}'s algorithm descriptions useful in determining
+the time taken.
 
 % If using the perfect failure detector, set its timeout so that 2 messages can
 % be lost without failure being detected. The maximum round-trip time is 5
@@ -178,87 +382,205 @@ determining the time taken.
 % subsection lost_messages (end)
 
 
+\subsection*{Deliverables [4 points]} % (fold)
+\label{sub:p2_deliverable}
 
-% section assumptions (end)
+Explain your solution, and parameters for your failure detector, if used, in
+no more than 500 words.
+
+Implement your solution in a module called \emph{crash\_robots}.
+
+Your solution will be tested by killing robots during the performance. One way
+to do this is to close their GUI window. Another might involve Erlang's kill
+function. You should see ``stack terminated'' in the terminal confirming the
+robot and its stack have stopped.
+
+Again, the finishing position and dance sequence of robots will be checked,
+but this time it will only be \emph{correct} robots (the ones which survived).
+The \emph{fll} \verb!MAX_DELAY! will be 2500 ms, and \emph{sl}
+\verb!RESEND_PERIOD! 3000 ms.
+
+
+% subsection deliverable (end)
+
+% section problem_2_failing_nodes (end)
 
 
 
 
 
-\section{Optimising the perfect-link abstraction} % (fold)
-\label{sub:optimising_pl}
+
+
+
+
+
+
+
+\section*{Problem 3: Failing nodes in partial synchrony} % (fold)
+\label{sec:problem_3_partial_synchrony}
+
+In the previous scenario we assumed an upper bound on the network latency, and
+determined a reasonable limit for transmission time from \emph{sl} to a
+correct process. While this allowed us to use the fail-stop abstraction, it is
+reliant on having a connection to the other robots which provides these
+quality-of-service guarantees, which can be expensive and is not always
+available.
+
+We will now remove the upper-bound on transmission: messages can be delayed
+arbitrarily. In the evaluation of your work we will think of a big number,
+change the \emph{fll} maximum delay, and see if your algorithm works.
+
+You should now decide whether to adopt the fail-noisy or fail-silent failure
+abstraction, and consider the use of quorums and $\Diamond P$ or $\Omega$ to
+maintain the robot invariants.
+
+\subsection*{Number of expected failures} % (fold)
+\label{sub:number_of_expected_failures}
+
+Fortunately, the Shamshung engineers have now provided you with a predictive
+model for the robot failures. They tell you that the number of failed robots
+for a 100 step dance obeys a normal distribution with mean $1.5$ and variance
+$0.4$\footnote{\url{http://www.wolframalpha.com/input/?i=normal+distribution+mean+1.5+variance+0.4}}.
+Armed with this information you may reason about quorums and fail-silent
+algorithms.
+
+% subsection number_of_expected_failures (end)
+
+
+\subsection*{Difficulty of quorums vs $\Diamond P$ or $\Omega$} % (fold)
+\label{sub:difficulty_of_quorums_vs_diamond_p_}
+
+Quorums provide a simpler solution, but limit the number of failures your
+group of robots will survive. $\Diamond P$ and $\Omega$ will likely require
+some amount of modifications to be made to the dancing robot application code.
+If you can make this work with a correct algorithm it will be rewarded in the
+marking.
+
+% subsection difficulty_of_quorums_vs_diamond_p_ (end)
+
+
+\subsection*{Deliverable [5 points]} % (fold)
+\label{sub:p3_deliverable}
+
+Explain your solutions in your report in no more than 700 words.
+Discuss the problems for the application introduced by unbounded message
+delays and the fail-noisy abstraction (recovering suspected nodes).
+Include a discussion of the useful properties of any new
+communication abstractions you implement and use.
+State any assumptions and limitations of your solution, in particular those
+related to the \emph{entertainment} and \emph{halting} requirements.
+
+You may determine that this is not possible with the
+current requirements. If so, argue your case, and suggest changes to the
+specification in addition to your solution.
+
+Implement your solution in the module \emph{ps\_crash\_robots}.
+Your solution will be tested in the same fashion as Problem 2, but with
+an unspecified \emph{fll} maximum delay. The number of failures injected will
+depend on your design. You should explain any limitation here. For example,
+what happens if all but one of the robots fails, will the dance complete?
+
+% subsection deliverable (end)
+
+% section problem_3_partial_synchrony (end)
+
+
+
+
+
+
+
+
+
+
+\section*{Extension: ``They've got no rhythm'' [5 points]} % (fold)
+\label{sec:buffered_dance_routine}
+
+While we have solved the issue of the robots dancing the same steps in the
+same order, they perform dance moves on the delivery of messages; this isn't
+ideal, since messages can be arbitrarily delayed, which will mean each robot
+dancing with its own rhythm: they'll be doing the same thing, but something
+just won't look right, and how will the marketing team know what kind of music
+to play?
+
+Think of a way to modify the application so that the robots execute dance
+moves at regular intervals, while maintaining the invariants. Decide on an
+interval, such as 2 steps per second. You might derive this from the
+beats-per-minute of your favourite music. A key problem here is ensuring the
+robots know what the next step is in advance of taking it, without violating
+the \emph{spontaneity} requirement.
+
+Document your design in no more than 2 pages. We will experiment with your
+implementation \emph{timed\_robots} according to your written report. The
+robots should still keep to the same sequence of dance moves, but now also
+move at regular intervals -- this will be checked visually.
+
+You may find it simpler to start with the assumption that no robots crash
+(problem 1), and gradually add the failures of problem 2 and 3. State which
+crash model your robots work for. The harder failure models are worth more
+points.
+
+
+
+% section buffered_dance_routine (end)
+
+
+
+
+
+
+\section*{Extension: optimising the point-to-point links [2 points]} % (fold)
+\label{sec:extension_optimising_the_link_channels}
 
 The \emph{pl}, \emph{sl}, \emph{fll} messaging stack is theoretically correct,
 but expensive in practice. Can you modify it so that fewer messages are sent,
 without risking that messages are not delivered?
 
 Can you think of a way to safely garbage-collect the stored and retransmitted
-messages?
-
-
-
-% subsubsection halting_retransmission_on_algorithm_termination (end)
-
-\subsection{Other ideas} % (fold)
-\label{ssub:other_ideas}
-
-How else might you optimise \emph{pl}, \emph{sl}, \emph{fll}? Check the performance clauses of
-sections 2.4.3-4 in the course book, about \emph{sl} and \emph{pl}, for ideas.
-
+messages? How else might you optimise \emph{pl}, \emph{sl}, \emph{fll}? Refer to the
+performance clauses of sections 2.4.3-4 of \cite{cachin2011} for ideas.
 Consider the consequences of node failures and the various failure models
 with the algorithms and your changes.
 
-% subsubsection other_ideas (end)
+Deliver the files as usual, and also a discussion of what you have done and
+why you believe it is correct in the report. Check your robots still work
+with the changes you have made (as we will only test and mark it with your
+optimisations in place).
 
-% subsection optimising_pl (end)
-
-
-
-
-
+% section extension_optimising_the_link_channels (end)
 
 
 
-\section{Practical details} % (fold)
-\label{sec:practical_details}
-
-
-\subsection{Installing Erlang with WX} % (fold)
-\label{sub:installing_erlang_and_wx}
-
-Be sure to install (or build) Erlang with wxWidgets for the graphical
-component of the assignment.
-
-Mac users (10.8) can install 32-bit Erlang from
-\url{https://www.erlang-solutions.com/downloads/download-erlang-otp}. This
-company's builds may also be useful for other platforms.
 
 
 
-% subsection installing_erlang_and_wx (end)
+\section*{Extension: same-room dancing robots [2 points]} % (fold)
+\label{sec:extension_same_room_dancing_robots}
+
+Consider again the close-proximity robots in this video:
+\url{https://www.youtube.com/watch?v=4t1NWH6G1f0}. During performances,
+members of the public commented that some of the robots seemed to be dancing
+out-of-time with the others.
+
+Describe a mechanism for keeping the group of
+robots (while dancing in the same room, assuming a private and uncongested
+network interconnection) in time with each other, without recourse to a
+hypothetical global clock. Discuss which of the previous designs would be most
+appropriate in this setting, and any changes you might make to it.
+You are not expected to implement this solution.
+
+% section extension_same_room_dancing_robots (end)
 
 
 
-\subsection{Where to find help} % (fold)
-\label{sub:where_to_find_help}
-
-In order to find documentation for Erlang functions, try Google, the reference
-manual\footnote{\url{http://www.erlang.org/doc/apps/stdlib/index.html}}, and
-possibly \url{http://erldocs.com}.
-To better understand the algorithms, refer to the course slides or textbook
-\cite{cachin2011}.
-
-You can email me questions about your design and problems with Erlang. Please
-email to arrange in-person meetings.
-
-It's ok to talk to the other students about how to solve the problems, but
-don't copy their code.
-
-% subsection where_to_find_help (end)
 
 
 
-% section practical_details (end)
+
+
+
+
+
 
 
 
