@@ -9,7 +9,7 @@
 -define(FRAME_PADDING , 50).
 
 -define(TEMPO, 1000).
--define(STEPS, 20).
+-define(STEPS, 100).
 
 
 -record(state, {dancing = false, step, steps, robot, wx}).
