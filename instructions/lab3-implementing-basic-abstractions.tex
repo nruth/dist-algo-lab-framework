@@ -203,9 +203,7 @@ To test with Erlang erl terminal shells, for each process (node):
 
   \item Open a new terminal and cd to the project directory
 
-  \item \verb!erl -sname 'n1@localhost'! -- for n1..n5, launch the Erlang nodes
-
-  \item \verb!cd(ebin).! -- move to the binaries directory
+  \item \verb!erl -pa ebin -sname 'n1@localhost'! -- for n1..n5, launch the Erlang nodes
 
   \item \verb!stack:connect('n1@localhost').! -- interconnect the nodes, creating a cluster. Check with nodes(). Only needed once per node, new members are shared with others
 

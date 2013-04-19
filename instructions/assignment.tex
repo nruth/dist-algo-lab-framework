@@ -78,6 +78,11 @@
 
 \maketitle
 
+\section*{Due date} % (fold)
+\label{sec:due_date}
+The work is due on the evening of Friday the 3rd of May.
+% section section_name (end)
+
 
 \section*{Introduction}
 
@@ -155,6 +160,17 @@ find out what went wrong and fix it before the next show.
 \section*{Practical details} % (fold)
 \label{sec:practical_details}
 
+This project should be solved using our implementation of the framework
+described by \cite{cachin2011}. The code you write should look a lot like the
+algorithms. Mostly you will be reacting to and triggering events, and
+manipulating component state data. Message transmission is handled by the
+framework.
+
+\textbf{You should not use any Erlang messaging facilities such as ``!'' or the rpc
+module. Any submission built using Erlang messaging primitives
+instead of the framework will receive 0}. Use stack:trigger
+and suitable events, as in the theory. If in doubt, ask.
+
 To familiarise yourself with the programming framework and basic abstractions
 be sure to complete the lab ``LSINF2345 Lab: Implementing the basic
 abstractions''.
@@ -167,10 +183,9 @@ Note that you will need to implement some missing components (\emph{pl},
 
 \begin{verbatim}
   # Open a new terminal and cd to the project directory
-  erl -sname 'n1@localhost' # for n1..nN with N dancers
+  erl -pa ebin -sname 'n1@localhost' # for n1..nN with N dancers
 
   % In each erl shell:
-  cd(ebin).
   stack:connect('n1@localhost').
 
   % Then, after all are connected, on each node
@@ -181,6 +196,23 @@ Note that you will need to implement some missing components (\emph{pl},
   dancing_robots:start_dance().
 \end{verbatim}
 
+Or to save some it has been bundled up in some bootstrap functions:
+
+\begin{verbatim}
+  # Open a new terminal and cd to the project directory
+  # for n1..nN-1 with N dancers, so change nN to n1 n2 n3 and so on
+  erl -pa ebin -sname 'nN@localhost' -run stack boot_wait
+  # for node 2,
+  # erl -pa ebin -sname 'n2@localhost' -run stack boot_wait
+
+  # open a final process which will tell the others to run
+  erl -pa ebin -sname 'nN@localhost' -run stack boot_all dancing_robots N
+  # when N=5 dancers,
+  # erl -pa ebin -sname 'n5@localhost' -run stack boot_all dancing_robots 5
+\end{verbatim}
+
+Be sure to use these commands once per shell lifetime. If you need to restart
+the stack you should also restart all the Erlang shells.
 
 % subsection running_the_software (end)
 
@@ -251,7 +283,7 @@ don't copy their code.
 
 
 \section*{Problem 0: Setting the stage, the uncoordinated robots [1~point]} % (fold)
-\label{sec:section_name}
+\label{sec:p0}
 
 We start by reproducing the naïve software, where no robot fails and no
 special consideration has been given to broadcasting messages. That is, the

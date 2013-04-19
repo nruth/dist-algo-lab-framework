@@ -12,7 +12,7 @@
 -define(STEPS, 100).
 
 
--record(state, {dancing = false, step, steps, robot, wx}).
+-record(state, {dancing = false, step=0, steps=[], robot, wx}).
 -record(robot, {
   left_arm = "_", right_arm = "_", head = "o",
   x=round(?FRAME_WIDTH/2), y=round(?FRAME_HEIGHT/2), bearing=0
@@ -69,7 +69,7 @@ upon_event(_Other, State) ->
 
 
 process_broadcast(start_dance, State) ->
-  State#state{dancing = true, step = 0, steps = []};
+  State#state{dancing = true};
 
 process_broadcast(stop_dance, State) ->
   % print stop message and robot position
@@ -117,7 +117,7 @@ process_broadcast(Move={head, Size}, State) ->
 update_robot(State, NextRobot, Step) ->
   update_onpaint(State#state.wx, NextRobot),
   State#state{robot = NextRobot,
-    steps = (State#state.steps ++ [Step]),
+    steps = lists:append([State#state.steps, [Step]]),
     step = (State#state.step + 1)
   }.
 

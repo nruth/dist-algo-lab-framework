@@ -2,14 +2,57 @@
 -behaviour(gen_server).
 -include_lib("stack_state.hrl").
 
+-include_lib("eunit/include/eunit.hrl").
+
 -export([
-start_link/0, stop/0,
+start/0, start_link/0, stop/0,
 add_component/1, query_components/0, trigger/1, trigger_one_receiver/2, transmit/2,
-nodes/0, connect/1,
+nodes/0, connect/1, boot_all/1, boot_wait/0,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
 %% API  ===================================================
+
+boot(Component) ->
+  stack:start(),
+  stack:add_component(Component).
+
+boot_wait() ->
+  register(stack_boot_hook, self()),
+  receive
+    {From, {boot, Component}} ->
+      io:format("**Booting stack, installing ~w~n", [Component]),
+      boot(Component),
+      From ! {stack_boot_hook, node(), ok}
+  end.
+
+boot_all([TopComponent, Nodes]) ->
+  {N, []} = string:to_integer(Nodes),
+  % connect to each cluster node
+  boot_connect(N),
+
+  % boot self
+  boot(list_to_atom(TopComponent)),
+  % boot stack on each node
+  rpc:multi_server_call(stack_boot_hook, {boot, list_to_atom(TopComponent)}).
+
+interpolate_node_n(N) ->
+  list_to_atom(lists:flatten(io_lib:format('n~p@localhost', [N]))).
+
+interpolate_node_test() ->
+  ?assertEqual('n2@localhost', interpolate_node_n(2)).
+
+
+boot_connect(0) ->
+  ok;
+boot_connect(N) ->
+  stack:connect(interpolate_node_n(N)),
+  boot_connect(N-1).
+
+
+start() ->
+  %% http://erldocs.com/R15B/stdlib/gen_server.html#start_link/4
+  gen_server:start({local, ?MODULE}, ?MODULE, [], []).
 
 % launch the stack
 start_link() ->
@@ -39,6 +82,7 @@ stop() ->
 connect(Node) ->
   case whereis(stack) of
     undefined ->
+      io:format("~w connecting to ~w~n",[node(), Node]),
       true = net_kernel:connect_node(Node),
       erlang:nodes();
     _ ->
