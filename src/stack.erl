@@ -3,7 +3,7 @@
 -include_lib("stack_state.hrl").
 
 -export([
-start_link/0, stop/0, boot/0, boot/1, start_cluster_application/1,
+start_link/0, stop/0, boot/0, boot/1, launch_cluster_application/1, halt_cluster/0,
 add_component/1, query_components/0, trigger/1, trigger_one_receiver/2, transmit/2,
 nodes/0, connect/1,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
@@ -22,9 +22,13 @@ boot(BootNode) ->
 
 
 % run to launch application component on all nodes; run after all connected (by boot)
-start_cluster_application(Component) ->
+launch_cluster_application(Component) ->
+  gen_server:multi_call(?MODULE, lock_nodes),
   gen_server:multi_call(?MODULE, {register_component, Component}),
   gen_server:multi_call(?MODULE, {start_application, Component}).
+
+halt_cluster() ->
+  gen_server:call(?MODULE, halt_cluster).
 
 % launch the stack
 start_link() ->
@@ -51,15 +55,12 @@ stop() ->
   gen_server:call(?MODULE, stop).
 
 connect(Node) ->
-  io:format("~w connecting to ~w~n",[node(), Node]),
-  true = net_kernel:connect_node(Node),
-  erlang:nodes().
+  gen_server:call(?MODULE, {connect, Node}).
 
-% Returns the set of live erlang nodes.
-% Will always be a superset of the correct nodes for crash-stop and crash-noisy,
-% but would need revising for fail-recover to remember all nodes (rather than remove on erlang itself discovering a crash)
+% get all nodes (those present when launch_cluster_application called)
 nodes() ->
-  [node() | erlang:nodes()].
+  gen_server:call(?MODULE, get_nodes).
+  %% [node() | erlang:nodes()].
 
 % returns the currently registered components
 query_components() ->
@@ -95,6 +96,10 @@ handle_call({start_application, Component}, _From, State) ->
   send_event(Component, start_application),
   {reply, ok, State};
 
+handle_call({connect, Node}, _From, State) ->
+  io:format("~w connecting to ~w~n",[node(), Node]),
+  {reply, net_kernel:connect_node(Node), State};
+
 % add a component to the stack
 handle_call({register_component, Name}, _From, State) ->
   NextComponents = ?STACKSET:union(
@@ -107,13 +112,27 @@ handle_call({register_component, Name}, _From, State) ->
 handle_call(get_components, _From, State) ->
   {reply, {components, State#state.components}, State};
 
+
+% set nodes to forever (lifetime of stack) contain the current [node()|erlang:nodes()
+handle_call(lock_nodes, _From, State) ->
+  StateWithNodes = State#state{nodes=lists:sort([node()|erlang:nodes()])},
+  {reply, StateWithNodes#state.nodes, StateWithNodes};
+
 % return all nodes known at stack launch (including ones who have since crashed)
 handle_call(get_nodes, _From, State) ->
   {reply, State#state.nodes, State};
 
+
+% shut down all nodes in stack:nodes()
+handle_call(halt_cluster, _From, State) ->
+  rpc:multicall(State#state.nodes, init, stop, []),
+  {reply, ok};
+
 % shut down the stack
 handle_call(stop, _From, State) ->
   {stop, normal, ok, State}.
+
+
 
 
 %% non-blocking async messages
@@ -126,6 +145,7 @@ handle_cast({trigger, Event}, State) ->
   ),
   {noreply, State};
 
+% TODO: move send and receive msg into another gen_server so that e.g. stack:nodes() is not blocked
 % receive transmission from another node
 handle_cast({transmission, {from, SenderP}, Msg}, State) ->
   % io:format("transmission: ~w from ~w~n", [Msg, SenderP]),
