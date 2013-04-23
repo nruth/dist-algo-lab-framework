@@ -4,8 +4,11 @@ changed files:
 launch.sh
 src/component.erl
 src/dancing_robots.erl
+src/fll.erl
+src/fll_transmit.erl
 src/sl.erl
 src/stack.erl
+
 
 - component:start_timer now sends only once, you must call it again in your
 timeout event handler to get more timeout events (as in the book algos)

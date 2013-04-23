@@ -182,15 +182,24 @@ Note that you will need to implement some missing components (\emph{pl},
 \emph{beb}) before the software will run.
 
 \begin{verbatim}
-  # compile the software
-  ./rebar clean compile eunit
+  $ prefixes a system terminal command
+  > prefixes an Erlang shell command
 
-  # Open a new terminal for each node and cd to the project directory
-  # for n1..nN-1 with N dancers, so change nN to n1 n2 n3 and so on
-  erl -pa ebin  -s stack boot dancing_robots -sname n1@localhost
+  1. compile the software
+  $ ./rebar clean compile eunit
 
-  # when all nodes have been opened, in one erlang shell run:
-  dancing_robots:start_dance().
+  2. use the launch script (assumes xterm available)
+  $ ./launch.sh 5
+
+  2. OR manually open a new terminal for each node
+  (change n1 to n2,n3,...,nN)
+  $ erl -pa ebin  -s stack boot -sname n1@localhost
+
+  3. when all nodes have been opened, in one Erlang shell run:
+  > stack:launch_cluster_application(dancing_robots).
+
+  4. and to shut down the nodes, in one Erlang shell run:
+  > stack:halt_cluster().
 \end{verbatim}
 
 Remember to recompile and restart the shells when making changes.

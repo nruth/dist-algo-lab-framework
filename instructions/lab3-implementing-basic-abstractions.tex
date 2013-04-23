@@ -185,10 +185,6 @@ To also run tests, \verb!./rebar clean compile eunit!.
 
 You will need to recompile each time you make changes, and for simplicity we
 suggest shutting down and restarting all processes each time you recompile.
-To save typing you can paste multiple lines of commands into the erl shell at
-a time, also multiple commands on one line, just remember to follow each
-statement with a ``.''.
-
 
 \subsection{Running your stack} % (fold)
 \label{sub:running_your_stack}
@@ -198,13 +194,24 @@ statement with a ``.''.
 To test with Erlang erl terminal shells, for each process (node):
 
 \begin{verbatim}
-  # compile the software
-  ./rebar clean compile eunit
+  $ prefixes a system terminal command
+  > prefixes an Erlang shell command
 
-  # Open a new terminal for each node and cd to the project directory
-  # for n1..nN-1 with N dancers, so change nN to n1 n2 n3 and so on
-  # replace sl with whichever component is on top, e.g. an application
-  erl -sname n1@localhost -pa ebin  -s stack boot sl
+  1. compile the software
+  $ ./rebar clean compile eunit
+
+  2. use the launch script (assumes xterm available)
+  $ ./launch.sh 5
+
+  2. OR manually open a new terminal for each node
+  (change n1 to n2,n3,...,nN)
+  $ erl -pa ebin  -s stack boot -sname n1@localhost
+
+  3. when all nodes have been opened, in one Erlang shell run:
+  > stack:launch_cluster_application(pl).
+
+  4. and to shut down the nodes, in one Erlang shell run:
+  > stack:halt_cluster().
 \end{verbatim}
 
 
@@ -440,7 +447,7 @@ Having demonstrated your perfect links and best-effort broadcast to the
 assistant, implement the perfect failure detector.
 
 In a new file, \verb!src/p.erl!, implement the ``Perfect Failure Detector''
-abstraction with Algorithm~\ref{algo:p}, ``Exclude on Timeout''. Test the
+abstraction with the ``Exclude on Timeout'' algorithm of \cite{cachin2011}. Test the
 failure detector by connecting two or more nodes running \emph{P} and
 observing the behaviour of the other nodes when you shut one down by
 \verb!stack:stop()! or somehow killing the Erlang process.
@@ -448,51 +455,51 @@ observing the behaviour of the other nodes when you shut one down by
 Use your failure detector to implement lazy reliable broadcast and perfect
 leader election.
 
-
-\begin{algorithm}[htbp]
-  \SetKw{KwImplements}{Implements: }{}{}
-  \SetKw{KwUses}{Uses: }{}{}
-  \SetKw{KwTrigger}{trigger}
-  \SetKwProg{KwEvent}{upon event}{ do}{}
-
-  \SetAlgoNoLine % \SetAlgoLined
-  \KwImplements{PerfectFailureDetector, instance p}.\\
-  \KwUses{PerfectPointToPointLinks, instance pl}.\\
-  \BlankLine
-
-  \KwEvent{$<$ p, Init $>$}{
-    $alive := \Pi$\;
-    $detected := \emptyset$\;
-    $starttimer(\Delta)$;
-  }
-  \BlankLine
-
-  \KwEvent{$<Timeout>$}{
-    \ForEach{$proc\in\Pi$}{
-      \uIf{$(proc \notin alive) \land (proc \notin detected) $}{
-        $detected := detected \union \{proc\}$\;
-        \KwTrigger{$< p, crash, proc>$}\;
-      }
-      \KwTrigger{$< pl, send, proc, heartbeat\_request >$}\;
-    }
-    $alive := \emptyset$\;
-    $starttimer(\Delta)$\;
-  }
-  \BlankLine
-
-  \KwEvent{$<pl, deliver, q, heartbeat\_request>$}{
-    \KwTrigger{$<pl, send, q, heartbeat\_reply>$};
-  }
-  \BlankLine
-
-  \KwEvent{$<pl, deliver, proc, heartbeat\_reply>$}{
-    $alive := alive \union \{proc\}$;
-  }
-
- \caption{Exclude on Timeout, by Cachin et al.}
- \label{algo:p}
-\end{algorithm}
-
+%
+% \begin{algorithm}[htbp]
+%   \SetKw{KwImplements}{Implements: }{}{}
+%   \SetKw{KwUses}{Uses: }{}{}
+%   \SetKw{KwTrigger}{trigger}
+%   \SetKwProg{KwEvent}{upon event}{ do}{}
+%
+%   \SetAlgoNoLine % \SetAlgoLined
+%   \KwImplements{PerfectFailureDetector, instance p}.\\
+%   \KwUses{PerfectPointToPointLinks, instance pl}.\\
+%   \BlankLine
+%
+%   \KwEvent{$<$ p, Init $>$}{
+%     $alive := \Pi$\;
+%     $detected := \emptyset$\;
+%     $starttimer(\Delta)$;
+%   }
+%   \BlankLine
+%
+%   \KwEvent{$<Timeout>$}{
+%     \ForEach{$proc\in\Pi$}{
+%       \uIf{$(proc \notin alive) \land (proc \notin detected) $}{
+%         $detected := detected \union \{proc\}$\;
+%         \KwTrigger{$< p, crash, proc>$}\;
+%       }
+%       \KwTrigger{$< pl, send, proc, heartbeat\_request >$}\;
+%     }
+%     $alive := \emptyset$\;
+%     $starttimer(\Delta)$\;
+%   }
+%   \BlankLine
+%
+%   \KwEvent{$<pl, deliver, q, heartbeat\_request>$}{
+%     \KwTrigger{$<pl, send, q, heartbeat\_reply>$};
+%   }
+%   \BlankLine
+%
+%   \KwEvent{$<pl, deliver, proc, heartbeat\_reply>$}{
+%     $alive := alive \union \{proc\}$;
+%   }
+%
+%  \caption{Exclude on Timeout, by Cachin et al.}
+%  \label{algo:p}
+% \end{algorithm}
+%
 
 
 % section lab_activity (end)
@@ -503,6 +510,24 @@ leader election.
 
 \section{Some Erlang pointers} % (fold)
 \label{sec:some_erlang_pointers}
+
+\subsection{Using the ``erl'' REPL} % (fold)
+\label{sub:using_the_erl_repl}
+
+Erlang comes with a read-eval-print-loop which you can use for experimenting
+with unfamiliar libraries, for example if you want to see the difference
+between \emph{sets} and \emph{ordsets} by building sets of simple atoms and
+observing the return values. It's also useful for running and interacting with
+our experiments and course project. In the real world you'd build and deploy
+standalone OTP application releases, but that's out of scope here.
+
+To save typing you can paste multiple lines of commands into the erl shell at
+a time, also multiple commands on one line, just remember to follow each
+statement with a ``.''.
+
+
+% subsection using_the_erl_repl (end)
+
 
 \subsection{Uppercase and lowercase terms} % (fold)
 \label{sub:uppercase_and_lowercase_terms}
