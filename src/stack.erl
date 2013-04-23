@@ -3,7 +3,7 @@
 -include_lib("stack_state.hrl").
 
 -export([
-start_link/0, stop/0, boot/1,
+start_link/0, stop/0, boot/0, boot/1, start_cluster_application/1,
 add_component/1, query_components/0, trigger/1, trigger_one_receiver/2, transmit/2,
 nodes/0, connect/1,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
@@ -11,10 +11,20 @@ init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 
 %% API  ===================================================
 
-boot([Component]) ->
+% assumes boot node sname n1@localhost
+boot() ->
+  boot('n1@localhost').
+
+% configurable boot node
+boot(BootNode) ->
   application:start(stack),
-  stack:connect('n1@localhost'),
-  stack:add_component(Component).
+  stack:connect(BootNode).
+
+
+% run to launch application component on all nodes; run after all connected (by boot)
+start_cluster_application(Component) ->
+  gen_server:multi_call(?MODULE, {register_component, Component}),
+  gen_server:multi_call(?MODULE, {start_application, Component}).
 
 % launch the stack
 start_link() ->
@@ -45,9 +55,11 @@ connect(Node) ->
   true = net_kernel:connect_node(Node),
   erlang:nodes().
 
+% Returns the set of live erlang nodes.
+% Will always be a superset of the correct nodes for crash-stop and crash-noisy,
+% but would need revising for fail-recover to remember all nodes (rather than remove on erlang itself discovering a crash)
 nodes() ->
   [node() | erlang:nodes()].
-  %% gen_server:call(?MODULE, get_nodes).
 
 % returns the currently registered components
 query_components() ->
@@ -76,6 +88,13 @@ terminate(normal, State) ->
 
 
 %% blocking sync messages
+
+% signal to a component that it can start its application logic
+% though it should be prepared to receive delivery events after init
+handle_call({start_application, Component}, _From, State) ->
+  send_event(Component, start_application),
+  {reply, ok, State};
+
 % add a component to the stack
 handle_call({register_component, Name}, _From, State) ->
   NextComponents = ?STACKSET:union(
@@ -83,7 +102,6 @@ handle_call({register_component, Name}, _From, State) ->
     State#state.components
   ),
   {reply, {registered, Name}, State#state{components=NextComponents}};
-
 
 % return active stack components
 handle_call(get_components, _From, State) ->

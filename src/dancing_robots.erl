@@ -12,7 +12,7 @@
 -define(STEPS, 100).
 
 
--record(state, {dancing = false, step=0, steps=[], robot, wx}).
+-record(state, {proposing_moves = false, step=0, steps=[], robot, wx}).
 -record(robot, {
   left_arm = "_", right_arm = "_", head = "o",
   x=round(?FRAME_WIDTH/2), y=round(?FRAME_HEIGHT/2), bearing=0
@@ -29,30 +29,30 @@ broadcast(Msg) ->
 upon_event({beb, deliver, _Sender, {dancerobot, Msg}}, State) ->
   process_broadcast(Msg, State);
 
+% initialise to a state that shows the robot and is ready to receive moves
 upon_event(init, _) ->
   component:start_timer(?TEMPO),
   Robot = #robot{},
   Wx = start_wx(Robot),
   #state{
-    dancing = false,
+    proposing_moves = false,
     robot = Robot,
     wx = Wx
   };
 
-
-% not yet dancing, but trigger next timer
-upon_event(timeout, State=#state{dancing = false}) ->
+% not yet proposing_moves, but trigger next timer
+upon_event(timeout, State=#state{proposing_moves = false}) ->
   component:start_timer(?TEMPO),
   State;
 
 % propose 100 moves then stop
-upon_event(timeout, State=#state{dancing = true}) when State#state.step >= ?STEPS ->
-  % do not launch new timer: stop heartbeats, stop dancing
+upon_event(timeout, State=#state{proposing_moves = true}) when State#state.step >= ?STEPS ->
+  % do not launch new timer: stop heartbeats, stop proposing_moves
   io:format("~w STOPPED DANCING~n", [node()]),
-  State#state{dancing=false};
+  State#state{proposing_moves=false};
 
 % upon timeout propose the next dance move to the group
-upon_event(timeout, State=#state{dancing = true}) ->
+upon_event(timeout, State=#state{proposing_moves = true}) ->
   NextStep = case pick_rand([turn_left, turn_right,
     step_forward, step_back,
     head, left_arm, right_arm]
@@ -64,7 +64,7 @@ upon_event(timeout, State=#state{dancing = true}) ->
   end,
   % io:format("NEXT MOVE: ~w~n", [NextStep]),
   stack:trigger({beb, broadcast,{dancerobot, NextStep}}),
-  % continue dancing
+  % continue proposing_moves
   component:start_timer(?TEMPO),
   State;
 
@@ -73,20 +73,20 @@ upon_event({dancerobot, get_steps}, State) ->
   io:format("Robot ~w~n***Position: ~w~n***Steps:~w~n", [node(), State#state.robot, State#state.steps]),
   State;
 
+upon_event(start_application, State) ->
+  % io:format("~w starting to propose moves~n", [node()]),
+  State#state{proposing_moves = true};
+
 upon_event(_Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, Other]),
   State.
 
 
-process_broadcast(start_dance, State) ->
-  State#state{dancing = true};
 
-process_broadcast(stop_dance, State) ->
-  % print stop message and robot position
-  io:format("STOPPING DANCE ~w~n", [node()]),
-  upon_event({dancerobot, get_steps}, State),
-  % stop proposing new dance steps
-  State#state{dancing = false};
+% once n steps taken stop dancing, ignoring any more received steps
+process_broadcast(Move, State) when State#state.step >= ?STEPS ->
+  io:format("~w dropping move ~w~n", [node(), Move]),
+  State;
 
 process_broadcast(Move=turn_left, State) ->
   NextRobot = State#state.robot#robot{
