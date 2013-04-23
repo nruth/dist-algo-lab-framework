@@ -27,12 +27,12 @@ stop(Component) ->
 
 % sends a timeout event to the calling pid every Duration miliseconds
 start_timer(Duration) ->
-  start_timer(self(), Duration).
+  start_timer(Duration, timeout).
 
-% send a timeout event to Destination every Duration miliseconds
-start_timer(Destination, Duration) ->
-  timer:apply_interval(Duration,
-    stack, trigger_one_receiver, [Destination, timeout]
+% send caller an event after Duration miliseconds
+start_timer(Duration, TimeoutEvent) ->
+  timer:apply_after(Duration,
+    stack, trigger_one_receiver, [self(), TimeoutEvent]
   ).
 
 

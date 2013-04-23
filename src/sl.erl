@@ -25,6 +25,7 @@ upon_event(timeout, State) ->
     nil,
     State#state.sent
   ),
+  component:start_timer(?RESEND_PERIOD),
   State;
 
 upon_event({sl, send, DestinationNodeQ, Msg}, State) ->
