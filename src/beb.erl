@@ -11,13 +11,14 @@ stop() ->
   component:stop(?MODULE).
 
 upon_event({beb, broadcast, Msg}, State) ->
+  io:format("beb sending: ~w~n", [Msg]),
   lists:map(fun(DestinationNodeQ) ->
     stack:trigger({pl, send, DestinationNodeQ, {beb, Msg}})
   end, stack:nodes()),
   State;
 
 upon_event({pl, deliver, SenderNodeP, {beb, Msg}}, State) ->
-  %% io:format("beb received broadcast: ~w from ~w~n", [Msg, SenderNodeP]),
+  io:format("beb received broadcast: ~w from ~w~n", [Msg, SenderNodeP]),
   stack:trigger({beb, deliver, SenderNodeP, Msg}),
   State;
 
