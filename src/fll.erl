@@ -32,7 +32,7 @@ upon_event(init, _State) ->
 
 % send without losses or delays
 upon_event({fll, send, DestinationNodeQ, Msg}, State=#state{reliable = true}) ->
-  stack:transmit(DestinationNodeQ, Msg),
+  fll_transmit:transmit(DestinationNodeQ, Msg),
   State;
 
 % send with random losses or delays
@@ -47,23 +47,9 @@ upon_event({fll, send, DestinationNodeQ, Msg}, State=#state{reliable = false}) -
       %% io:format("fll delaying message~n"),
       timer:apply_after(
         random:uniform(?MAX_DELAY),
-        stack, transmit, [DestinationNodeQ, Msg]
+        fll_transmit, transmit, [DestinationNodeQ, Msg]
       )
   end,
-  State;
-
-% rcv without delays
-upon_event({transmission_rcv, SenderP, Msg}, State=#state{reliable = true}) ->
-  stack:trigger({fll, deliver, SenderP, Msg}),
-  State;
-
-% rcv with delays
-upon_event({transmission_rcv, SenderP, Msg}, State=#state{reliable = false}) ->
-  % delay delivery
-  timer:apply_after(
-    random:uniform(?MAX_DELAY),
-    stack, trigger, [{fll, deliver, SenderP, Msg}]
-  ),
   State;
 
 upon_event(_Other, State) ->

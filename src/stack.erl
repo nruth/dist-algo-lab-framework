@@ -4,7 +4,7 @@
 
 -export([
 start_link/0, stop/0, boot/0, boot/1, launch_cluster_application/1, halt_cluster/0,
-add_component/1, query_components/0, trigger/1, trigger_one_receiver/2, transmit/2,
+add_component/1, query_components/0, trigger/1, trigger_one_receiver/2,
 nodes/0, connect/1,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
@@ -67,19 +67,13 @@ query_components() ->
   {components, Components} = gen_server:call(?MODULE, get_components),
   Components.
 
-% send a message to the registered process "stack" on a remote node
-% DestinationNodeQ: node() or similar (e.g. ip address)
-% Msg : erlang term
-transmit(DestinationNodeQ, Msg) ->
-  %% io:format('Transmitting ~w to node ~w~n', [Msg, DestinationNodeQ]),
-  gen_server:cast({stack, DestinationNodeQ}, {transmission, {from, node()}, Msg}).
-
 
 %% gen_server callbacks ===================================================
 
 % entry-point for newly spawned stack process
-init([]) ->
-  {ok, #state{nodes = lists:sort([node()|erlang:nodes()])}}.
+init(_) ->
+  fll_transmit:start_link(),
+  {ok, #state{}}.
 
 terminate(normal, State) ->
   io:format("~w terminating stack.~n", [?MODULE]),
@@ -112,16 +106,14 @@ handle_call({register_component, Name}, _From, State) ->
 handle_call(get_components, _From, State) ->
   {reply, {components, State#state.components}, State};
 
-
 % set nodes to forever (lifetime of stack) contain the current [node()|erlang:nodes()
 handle_call(lock_nodes, _From, State) ->
-  StateWithNodes = State#state{nodes=lists:sort([node()|erlang:nodes()])},
+  StateWithNodes = State#state{nodes = lists:sort([node() | erlang:nodes()] )},
   {reply, StateWithNodes#state.nodes, StateWithNodes};
 
 % return all nodes known at stack launch (including ones who have since crashed)
 handle_call(get_nodes, _From, State) ->
   {reply, State#state.nodes, State};
-
 
 % shut down all nodes in stack:nodes()
 handle_call(halt_cluster, _From, State) ->
@@ -130,6 +122,7 @@ handle_call(halt_cluster, _From, State) ->
 
 % shut down the stack
 handle_call(stop, _From, State) ->
+  gen_server:call(fll_transmit, stop),
   {stop, normal, ok, State}.
 
 
@@ -145,13 +138,6 @@ handle_cast({trigger, Event}, State) ->
   ),
   {noreply, State};
 
-% TODO: move send and receive msg into another gen_server so that e.g. stack:nodes() is not blocked
-% receive transmission from another node
-handle_cast({transmission, {from, SenderP}, Msg}, State) ->
-  % io:format("transmission: ~w from ~w~n", [Msg, SenderP]),
-  % Assume fll is always used as the low-level point-to-point comm primitive
-  send_event(fll, {transmission_rcv, SenderP, Msg}),
-  {noreply, State};
 handle_cast(Request, State) ->
   {stop, {unexpected_message, Request}, State}.
 
