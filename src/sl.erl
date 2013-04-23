@@ -43,7 +43,7 @@ upon_event({fll, deliver, SenderNodeP, {sl, Msg}}, State) ->
   stack:trigger({sl, deliver, SenderNodeP, Msg}),
   State;
 
-%% upon_event({sl, deliver, _SenderNodeQ, _Msg}, State) ->
+%% upon_event({sl, deliver, SenderNodeQ, Msg}, State) ->
 %%   io:format("sl received message: ~w from ~w~n", [Msg, SenderNodeQ]),
 %%   State;
 
