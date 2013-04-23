@@ -24,6 +24,11 @@ uses() -> [beb].
 broadcast(Msg) ->
   stack:trigger({beb, broadcast, {dancerobot, Msg}}).
 
+% catch any broadcast from the chosen broadcast mechanism
+% change beb to match your choice of broadcast algo
+upon_event({beb, deliver, _Sender, {dancerobot, Msg}}, State) ->
+  process_broadcast(Msg, State);
+
 upon_event(init, _) ->
   component:start_timer(?TEMPO),
   Robot = #robot{},
@@ -34,10 +39,17 @@ upon_event(init, _) ->
     wx = Wx
   };
 
+
+% not yet dancing, but trigger next timer
+upon_event(timeout, State=#state{dancing = false}) ->
+  component:start_timer(?TEMPO),
+  State;
+
 % propose 100 moves then stop
 upon_event(timeout, State=#state{dancing = true}) when State#state.step >= ?STEPS ->
-  stop_dance(),
-  State;
+  % do not launch new timer: stop heartbeats, stop dancing
+  io:format("~w STOPPED DANCING~n", [node()]),
+  State#state{dancing=false};
 
 % upon timeout propose the next dance move to the group
 upon_event(timeout, State=#state{dancing = true}) ->
@@ -52,11 +64,9 @@ upon_event(timeout, State=#state{dancing = true}) ->
   end,
   % io:format("NEXT MOVE: ~w~n", [NextStep]),
   stack:trigger({beb, broadcast,{dancerobot, NextStep}}),
+  % continue dancing
+  component:start_timer(?TEMPO),
   State;
-
-% catch any broadcast from the chosen broadcast mechanism
-upon_event({beb, deliver, _Sender, {dancerobot, Msg}}, State) ->
-  process_broadcast(Msg, State);
 
 % handle request query for the current steps and position of the robot
 upon_event({dancerobot, get_steps}, State) ->
