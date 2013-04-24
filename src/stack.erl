@@ -28,7 +28,8 @@ launch_cluster_application(Component) ->
   gen_server:multi_call(?MODULE, {start_application, Component}).
 
 halt_cluster() ->
-  gen_server:call(?MODULE, halt_cluster).
+  rpc:multicall(erlang:nodes(), init, stop, []),
+  init:stop().
 
 % launch the stack
 start_link() ->
@@ -92,7 +93,7 @@ handle_call({start_application, Component}, _From, State) ->
 
 handle_call({connect, Node}, _From, State) ->
   io:format("~w connecting to ~w~n",[node(), Node]),
-  {reply, net_kernel:connect_node(Node), State};
+  {reply, connect_with_retries(Node), State};
 
 % add a component to the stack
 handle_call({register_component, Name}, _From, State) ->
@@ -115,16 +116,25 @@ handle_call(lock_nodes, _From, State) ->
 handle_call(get_nodes, _From, State) ->
   {reply, State#state.nodes, State};
 
-% shut down all nodes in stack:nodes()
-handle_call(halt_cluster, _From, State) ->
-  rpc:multicall(State#state.nodes, init, stop, []),
-  {reply, ok};
-
 % shut down the stack
 handle_call(stop, _From, State) ->
   gen_server:call(fll_transmit, stop),
   {stop, normal, ok, State}.
 
+connect_with_retries(Node) ->
+  connect_with_retries(Node, 10).
+
+connect_with_retries(Node, 1) ->
+  net_kernel:connect_node(Node);
+connect_with_retries(Node, N) when N > 1->
+  io:format("Connecting to ~w. Retries left ~w~n",[node(), N]),
+  case net_kernel:connect_node(Node) of
+    true  ->
+      true;
+    _Other ->
+      timer:sleep(1000),
+      connect_with_retries(Node, N-1)
+  end.
 
 
 
