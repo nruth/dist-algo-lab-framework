@@ -1,4 +1,15 @@
-From  lsinf2345-framework-b51dadab5f1fbdd2.zip
+Most recent changes first
+
+# From eb7c78ef6d9be370f to 75aba99012d40fc9d3
+
+Improved launch.sh robustness by adding time-delayed retries to stack:connect.
+No longer fails on e.g. n2 loading before n1 and trying to connect to
+unavailable n1.
+
+Changed files: stack.erl
+
+
+# From  lsinf2345-framework-b51dadab5f1fbdd2.zip
 
 changed files:
 launch.sh
