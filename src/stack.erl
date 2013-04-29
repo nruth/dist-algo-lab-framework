@@ -59,6 +59,7 @@ stop() ->
   gen_server:call(?MODULE, stop).
 
 connect(Node) ->
+  % TODO: add gen-server call timeout greater than retries timeout
   gen_server:call(?MODULE, {connect, Node}).
 
 % get all nodes (those present when launch_cluster_application called)
