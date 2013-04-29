@@ -3,7 +3,7 @@
 -export([ uses/0, upon_event/2, stop/0 ]).
 -record(state, {alive, detected}).
 
--define(DELTA, 1000).
+-define(DELTA, 10000).
 
 uses() -> [pl].
 
