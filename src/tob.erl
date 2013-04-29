@@ -4,7 +4,7 @@
 -export([ uses/0, upon_event/2, stop/0 ]).
 -record(state, {unordered, delivered, round, wait}).
 
-uses() -> [rb, heirarchical_consensus].
+uses() -> [rb, hierarchical_consensus].
 
 stop() ->
   component:stop(?MODULE).
