@@ -4,8 +4,6 @@
 -export([ uses/0, upon_event/2, stop/0 ]).
 -record(state, {unordered, delivered, round, wait}).
 
--define(RESEND_PERIOD, 3000).
-
 uses() -> [rb, heirarchical_consensus].
 
 stop() ->
