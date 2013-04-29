@@ -5,6 +5,7 @@
   instances,
   detectedranks
 }).
+
 -record(instance,
   {instance, round, proposal, proposer, delivered, broadcast}
 ).
@@ -37,7 +38,7 @@ get_instance_state(Instance, AllState) ->
 
 % returns all-state with the instance's entry replaced
 replace_state_instance(Instance, State, AllState) ->
-  AllState#state{instances = stateorddict:store(Instance, State, AllState#state.instances)}.
+  AllState#state{instances = orddict:store(Instance, State, AllState#state.instances)}.
 
 upon_event(init, _) ->
   #state{
@@ -59,27 +60,44 @@ upon_event({?MODULE, Instance, propose, V}, AllState) ->
   InstanceState = get_instance_state(Instance, AllState),
   InstanceState2 = case InstanceState#instance.proposal of
     bottom ->
-      io:format("~w proposing: ~w~n", [Instance, V]),
+      io:format("~w ~w proposing to replace bottom: ~w~n", [?MODULE, Instance, V]),
       InstanceState#instance{proposal = V};
     _ ->
       InstanceState
   end,
-  replace_state_instance(Instance, check_broadcast(InstanceState2), AllState);
+  replace_state_instance(Instance, check_round_condition(
+    check_decide(InstanceState2),
+    AllState#state.detectedranks
+  ), AllState);
 
-% received broadcast msg e.g. {consensus, 1, decided, V, P}
-upon_event({beb, deliver, {?MODULE, Instance, decided, V, PFrom}}, AllState) ->
-  R = rank(PFrom),
+% received broadcast msg e.g. {consensus, 1, decided, V}
+upon_event({beb, deliver, PFrom, {?MODULE, Instance, decided, V}}, AllState) ->
+  io:format("h consensus received ~w~n", [{beb, deliver, PFrom, {?MODULE, Instance, decided, V}}]),
+  Round = rank(PFrom),
   InstanceState = get_instance_state(Instance, AllState),
-  InstanceState2 = InstanceState#instance{delivered = orddict:store(R, true, InstanceState#instance.delivered)},
-  InstanceState3 = case (R < rank(node())) and
-    (R > InstanceState2#instance.proposer) of
+  io:format("storing delivered ~w ~w~n",[Round, true]),
+  InstanceState2 = InstanceState#instance{
+    delivered = orddict:store(Round, true, InstanceState#instance.delivered)
+  },
+  io:format("IState2 ~w~n",[InstanceState2]),
+  InstanceState3 = case (Round < rank(node())) and (Round > InstanceState2#instance.proposer) of
     true ->
-      InstanceState2#instance{proposal = V, proposer = R};
+      InstanceState2#instance{proposal = V, proposer = Round};
     _ ->
       InstanceState2
   end,
-  NewAllState = replace_state_instance(Instance, InstanceState3, AllState),
-  check_instance_round_condition(Instance, NewAllState);
+  io:format("IState3 ~w~n",[InstanceState3]),
+  InstanceState4 = check_round_condition(InstanceState3, AllState#state.detectedranks),
+  io:format("IState4 after round condition ~w~n",[InstanceState4]),
+  InstanceState5 = check_decide(InstanceState4),
+  NewAllState = replace_state_instance(Instance, InstanceState5, AllState),
+  io:format("NewAllState ~w~n",[NewAllState]),
+  NewAllState;
+
+
+upon_event({?MODULE, Instance, decide, Decided}, State) ->
+  io:format("DECIDED ~w ~w: ~w~n",[?MODULE, Instance, Decided]),
+  State;
 
 upon_event(_Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, _Other]),
@@ -94,39 +112,41 @@ rank(Node) ->
 
 
 check_round_condition_all_instances(AllState) ->
-  orddict:map(
-    fun (InstanceState) ->
-      check_broadcast(InstanceState)
+  CheckedInstances = orddict:map(
+    fun (_Instance, InstanceState) ->
+      check_round_condition(InstanceState, AllState#state.detectedranks)
     end,
     AllState#state.instances
-  ).
+  ),
+  AllState#state{instances = CheckedInstances}.
 
-
-% returns updated AllState
-check_instance_round_condition(Instance, AllState) ->
-  InstanceState = get_instance_state(Instance, AllState),
-  replace_state_instance(Instance, check_round_condition(InstanceState, AllState#state.detectedranks), AllState).
 
 % Move to next round if appropriate.
 % Calls check-broadcast when round changes.
 % returns instance state
 check_round_condition(InstanceState, Detectedranks) ->
+  io:format("Checking if round should increase: ~w detectedranks ~w~n", [InstanceState, Detectedranks]),
   RoundDelivered = case orddict:find(InstanceState#instance.round,
     InstanceState#instance.delivered) of
     {ok, true}  ->
+      % io:format("round ~w was delivered~n", [InstanceState#instance.round]),
       true;
     _ ->
+      % io:format("round ~w not delivered~n",[InstanceState#instance.round]),
       false
   end,
-  case sets:is_element(InstanceState#instance.round, Detectedranks) and RoundDelivered of
+  case sets:is_element(InstanceState#instance.round, Detectedranks) or RoundDelivered of
     true ->
-      check_broadcast(InstanceState#instance{round = InstanceState#instance.round + 1});
+      InstanceState2 = InstanceState#instance{round = (InstanceState#instance.round) + 1},
+      %% io:format("IS2 round increased, ~w~n", [InstanceState]),
+      check_decide(InstanceState2);
     _ ->
       InstanceState
   end.
 
 % returns instance state
-check_broadcast(InstanceState) ->
+check_decide(InstanceState) ->
+  io:format("Checking if can decide: ~w~n", [InstanceState]),
   case
     ( (InstanceState#instance.round == rank(node()))
       and
@@ -135,11 +155,15 @@ check_broadcast(InstanceState) ->
       (InstanceState#instance.broadcast == false)
     ) of
     true ->
-      stack:trigger({beb, broadcast, {InstanceState#instance.instance,
-        decided, InstanceState#instance.proposal}}),
+      stack:trigger({beb, broadcast,
+        {?MODULE, InstanceState#instance.instance, decided,
+          InstanceState#instance.proposal
+        }
+      }),
       stack:trigger({?MODULE, InstanceState#instance.instance, decide,
         InstanceState#instance.proposal}),
       InstanceState#instance{broadcast=true};
     _ ->
+      io:format("decided no for Round ~w, Proposal ~w, Broadcast ~w~n", [InstanceState#instance.round, InstanceState#instance.proposal, InstanceState#instance.broadcast]),
       InstanceState
   end.
