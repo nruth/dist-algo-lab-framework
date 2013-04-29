@@ -22,7 +22,7 @@ upon_event({rb, broadcast, Msg}, State) ->
   State;
 
 upon_event({beb, deliver, _, {rb, data, Id, Sender, Msg}}, State) ->
-  case sets:is_element(Msg, from(Sender, State)) of
+  case sets:is_element({Id, Msg}, from(Sender, State)) of
     false ->
       stack:trigger({rb, deliver, Sender, Msg}),
       io:format("rb delivered ~w from ~w~n", [Msg, Sender]),
