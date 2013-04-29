@@ -1,14 +1,11 @@
 % "perfect" failure detector
 -module(p).
--export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
+-export([ uses/0, upon_event/2, stop/0 ]).
 -record(state, {alive, detected}).
 
 -define(DELTA, 1000).
 
 uses() -> [pl].
-
-start_link() ->
-  component:start_link(?MODULE).
 
 stop() ->
   component:stop(?MODULE).
@@ -18,7 +15,7 @@ upon_event(init, _) ->
   component:start_timer(?DELTA),
   #state{
     % start with all (assumed connected by stack bootup) nodes alive
-    alive = sets:from_list(nodes()),
+    alive = sets:from_list(stack:nodes()),
     % and no nodes failed
     detected = sets:new()
   };
@@ -26,7 +23,7 @@ upon_event(init, _) ->
 % heartbeat timeout expired, time to detect new failures
 upon_event(timeout, State) ->
   % functional update of detected by folding over all nodes
-  DetectedUpdated = sets:fold(
+  DetectedUpdated = lists:foldl(
     fun (PNode, DetectedAccum) ->
       % send next heartbeat (whether crashed or not; see perf notes of book)
       stack:trigger({pl, send, PNode, heartbeat_request}),
