@@ -123,7 +123,7 @@ connect_with_retries(Node) ->
 connect_with_retries(Node, 1) ->
   net_kernel:connect_node(Node);
 connect_with_retries(Node, N) when N > 1->
-  io:format("Connecting to ~w. Retries left ~w~n",[node(), N]),
+  io:format("Connecting to ~w. Retries left ~w~n",[Node, N]),
   case net_kernel:connect_node(Node) of
     true  ->
       true;
