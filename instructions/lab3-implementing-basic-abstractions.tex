@@ -511,6 +511,90 @@ leader election.
 \section{Some Erlang pointers} % (fold)
 \label{sec:some_erlang_pointers}
 
+\subsection{Functional programming and mutable state} % (fold)
+\label{sub:_state_}
+
+As Erlang is a (quasi) functional programming language, we need to jump
+through some hoops to produce a server with mutable state. The way this is
+achieved is to recursively call a function which receives messages with the
+server's state as the function parameters. Each time a message is received
+it has the ability to change the server state by changing the values passed
+to the recursive call.
+
+Although you do not see the recursive call being made by the \verb!upon_event!
+function it uses the same idea: the value you return will be used as the
+state value next time that component's \verb!upon_event! is fired.
+
+Also be careful in translating the algorithms from mutable to immutable data
+structures. For example, variables cannot be re-assigned.
+
+\begin{verbatim}
+  % this will not work
+  X = 5.
+  X = X + 1.
+
+  % instead write something like
+  X = 5.
+  X2 = X + 1.
+\end{verbatim}
+
+Also the collections we will use are immutable value objects (as in functional
+programming), not mutable data structures (such as in Java, Python, Ruby,
+...). Rather than modifying an existing structure you create a new collection
+with some values added or removed. The two structures are distinct, in much
+the same way as two integers continue to exist after you add them to create
+another resulting integer ($1+2=3$, 1 and 2 do not change value). For example
+the following pseudocode\footnote{None of these examples are valid Erlang.}
+for-loop which might accumulate failed node objects cannot be written in a for
+loop accumulating a value:
+
+\begin{verbatim}
+  FailedNodes = Set.new
+  for Node in Nodes
+    FailedNodes += Node if Node.failed?
+  end
+\end{verbatim}
+
+Instead, this would be written using a fold (or reduce) operator, which
+takes a collection and produces (or reduces) from it a single value. This
+value might be another collection or it might be an aggregate value such as
+a mean or maximum.
+
+\begin{verbatim}
+  FailedNodes = fold Node in Nodes, starting Accumulator = {}
+    if Node.failed?
+      Accumulator + {Node}
+    else
+      Accumulator
+    end
+  end
+\end{verbatim}
+
+In the above each node is examined in turn, each having the ability to replace
+the accumulator value seen by the next iteration. The initial value is here
+the empty set, but could be something else. Note that the final value in this
+example is the result (return value) of the fold statement executed across
+the entire Nodes collection.
+
+A particular bug to avoid is the following, which will result in the change
+being lost (because the result of stack:trigger is returned, instead of
+FailedNodes). A simple fix is to add a final line ``FailedNodes.''.
+
+\begin{verbatim}
+  FailedNodes = fold Node in Nodes, starting Accumulator = {}
+    if Node.failed?
+      Accumulator + {Node}
+    else
+      Accumulator
+    end
+  end,
+  stack:trigger{...}.
+\end{verbatim}
+
+Many books cover these ideas so they are not considered further here.
+
+% subsection _state_ (end)
+
 \subsection{Using the ``erl'' REPL} % (fold)
 \label{sub:using_the_erl_repl}
 

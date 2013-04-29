@@ -320,7 +320,7 @@ You will soon realise that message ordering is important to maintain the state
 of our robots (indeed, they are essentially a replicated-state-machine): the
 dance steps must be totally ordered across the robots.
 
-Keeping with the omission failure model, design two solutions to the total
+Assuming the omission failure model, design two solutions to the total
 ordering problem.
 \begin{enumerate}
 
@@ -365,6 +365,11 @@ to terminal.
 \section*{Problem 2: Failing nodes with a bounded (synchronous) network [4~points]} % (fold)
 \label{sec:problem_2_failing_nodes}
 
+\begin{quote}
+  \emph{``I know it's Saturday, but we have a problem. Smoke and wires everywhere... It's horrible! You have to come in!'' -- Project manager.}
+\end{quote}
+
+
 To make matters worse, it turns out that the robots do not travel well.
 Whatever the problem is, it has made the dancers rather temperamental, and
 prone to spectacular -- even explosive -- failure. The engineers are reluctant
@@ -379,9 +384,16 @@ recover. There are no Byzantine robots in the group (we hope).
 \subsection*{Broadcast, failure detection and lost messages} % (fold)
 \label{subsec:lost_messages}
 
+\begin{quote}
+  \emph{``Yes, don't worry, my brother-in-law works in telecoms.. We will use
+  only the best.'' -- Project manager, when asked about the robot
+  interconnection.}
+\end{quote}
+
 Your design may require the use of a failure detector. This may cause problems
 in broadcast algorithms if correct robots are falsely suspected due to setting
 the timeout of \emph{P} too low.
+
 
 In order to select a time bound for \emph{P}, determine how long is a
 reasonable time for a perfectly delivered message to be sent (heartbeat
@@ -395,9 +407,13 @@ robots. Reason probabilistically about these message losses, select a number
 of messages-in-a-row you are prepared to say will never be lost (say, 3
 successive omission failures) by a correct process, and take that as the
 maximum retransmissions required by your perfect link abstraction to achieve
-delivery. Include this reasoning in your report. You may find the performance
-sections of \cite{cachin2011}'s algorithm descriptions useful in determining
-the time taken.
+delivery. Include this reasoning in your report.
+
+You may find the performance sections of Cachin's \cite{cachin2011} algorithm
+descriptions useful in determining the time taken. Be careful to find the
+worst-case for your chosen algorithms, for example how long might a reliable
+broadcast take to arrive when the sender fails? Why might this be important
+in the leader-election approach?
 
 % If using the perfect failure detector, set its timeout so that 2 messages can
 % be lost without failure being detected. The maximum round-trip time is 5
@@ -415,9 +431,9 @@ no more than 500 words.
 Implement your solution in a module called \emph{crash\_robots}.
 
 Your solution will be tested by killing robots during the performance. One way
-to do this is to close their GUI window. Another might involve Erlang's kill
-function. You should see ``stack terminated'' in the terminal confirming the
-robot and its stack have stopped.
+to do this is to close their GUI window. Others include stack:stop() or
+Erlang's kill function. You should see ``stack terminated'' in the terminal
+confirming the robot and its stack have stopped.
 
 Again, the finishing position and dance sequence of robots will be checked,
 but this time it will only be \emph{correct} robots (the ones which survived).
@@ -443,6 +459,11 @@ The \emph{fll} \verb!MAX_DELAY! will be 2500 ms, and \emph{sl}
 \section*{Problem 3: Failing nodes in partial synchrony [5 points]} % (fold)
 \label{sec:problem_3_partial_synchrony}
 
+\begin{quote}
+  \emph{``Someone misunderstood the `communication' budget and allocated it to novelty keyrings. What's wrong with wifi anyway?'' -- Project manager, when asked when the leased-line specifications will arrive.}
+\end{quote}
+
+
 In the previous scenario we assumed an upper bound on the network latency, and
 determined a reasonable limit for transmission time from \emph{sl} to a
 correct process. While this allowed us to use the fail-stop abstraction, it is
@@ -463,7 +484,8 @@ maintain the robot invariants.
 
 Fortunately, the Shamshung engineers have now provided you with a predictive
 model for the robot failures. They tell you that the number of failed robots
-for a 100 step dance obeys a normal distribution with mean $1.5$ and variance
+for a 5-robot 100-step dance obeys a normal distribution with mean $1.5$ and
+variance
 $0.4$\footnote{\url{http://www.wolframalpha.com/input/?i=normal+distribution+mean+1.5+variance+0.4}}.
 Armed with this information you may reason about quorums and fail-silent
 algorithms.
@@ -471,14 +493,13 @@ algorithms.
 % subsection number_of_expected_failures (end)
 
 
-\subsection*{Difficulty of quorums vs $\Diamond P$ or $\Omega$} % (fold)
+\subsection*{Quorums or failure detectors?} % (fold)
 \label{sub:difficulty_of_quorums_vs_diamond_p_}
 
-Quorums provide a simpler solution, but limit the number of failures your
-group of robots will survive. $\Diamond P$ and $\Omega$ will likely require
-some amount of modifications to be made to the dancing robot application code.
-If you can make this work with a correct algorithm it will be rewarded in the
-marking.
+Quorums may seem to provide a simpler solution than failure detection, but can
+you see a critical problem with this approach (consider the halting
+specification)? If you opt to use quorums in your solution try to justify that
+this undesirable situation will not occur.
 
 % subsection difficulty_of_quorums_vs_diamond_p_ (end)
 
@@ -580,9 +601,9 @@ optimisations in place).
 \label{sec:extension_same_room_dancing_robots}
 
 Consider again the close-proximity robots in this video:
-\url{https://www.youtube.com/watch?v=4t1NWH6G1f0}. During performances,
-members of the public commented that some of the robots seemed to be dancing
-out-of-time with the others.
+\url{https://www.youtube.com/watch?v=4t1NWH6G1f0}. During a similar
+performance with our robots, members of the public commented that some of the
+robots seemed to be dancing out-of-time with the others.
 
 Describe a mechanism for keeping the group of
 robots (while dancing in the same room, assuming a private and uncongested
