@@ -1,5 +1,16 @@
 Most recent changes first
 
+# From 75aba99012d40fc9d3
+
+- It is now possible to launch instances of a component (for consensus).
+    stack:add_component(hierarchical_consensus, c_round_1).
+
+- resolved an initialisation race condition
+
+You may remove the start_link functions from your components.
+
+
+
 # From eb7c78ef6d9be370f to 75aba99012d40fc9d3
 
 Improved launch.sh robustness by adding time-delayed retries to stack:connect.

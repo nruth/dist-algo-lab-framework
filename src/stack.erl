@@ -4,12 +4,13 @@
 
 -export([
 start_link/0, stop/0, boot/0, boot/1, launch_cluster_application/1, halt_cluster/0,
-add_component/1, query_components/0, trigger/1, trigger_one_receiver/2,
+add_component/1, add_component/2, query_components/0, trigger/1, trigger_one_receiver/2,
 nodes/0, connect/1,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
 %% API  ===================================================
+
 
 % assumes boot node sname n1@localhost
 boot() ->
@@ -23,8 +24,8 @@ boot(BootNode) ->
 
 % run to launch application component on all nodes; run after all connected (by boot)
 launch_cluster_application(Component) ->
-  gen_server:multi_call(?MODULE, lock_nodes),
-  gen_server:multi_call(?MODULE, {register_component, Component}),
+  gen_server:multi_call(stacknodes, lock_nodes),
+  gen_server:multi_call(?MODULE, {register_component, Component, Component}),
   gen_server:multi_call(?MODULE, {start_application, Component}).
 
 halt_cluster() ->
@@ -38,7 +39,9 @@ start_link() ->
 
 % register a component in the stack and launch its dependencies
 add_component(Name) ->
-  gen_server:call(?MODULE, {register_component, Name}).
+  add_component(Name, Name).
+add_component(Module, Instance) ->
+  gen_server:call(?MODULE, {register_component, Module, Instance}).
 
 
 % notify the stack (components) of an event
@@ -60,8 +63,7 @@ connect(Node) ->
 
 % get all nodes (those present when launch_cluster_application called)
 nodes() ->
-  gen_server:call(?MODULE, get_nodes).
-  %% [node() | erlang:nodes()].
+  stacknodes:nodes().
 
 % returns the currently registered components
 query_components() ->
@@ -73,6 +75,7 @@ query_components() ->
 
 % entry-point for newly spawned stack process
 init(_) ->
+  stacknodes:start_link(),
   fll_transmit:start_link(),
   {ok, #state{}}.
 
@@ -96,28 +99,21 @@ handle_call({connect, Node}, _From, State) ->
   {reply, connect_with_retries(Node), State};
 
 % add a component to the stack
-handle_call({register_component, Name}, _From, State) ->
+handle_call({register_component, Module, Instance}, _From, State) ->
   NextComponents = ?STACKSET:union(
-    launch_component_and_dependencies_if_missing(Name),
+    launch_component_and_dependencies_if_missing(Module, Instance),
     State#state.components
   ),
-  {reply, {registered, Name}, State#state{components=NextComponents}};
+  {reply, {registered, Instance}, State#state{components=NextComponents}};
 
 % return active stack components
 handle_call(get_components, _From, State) ->
   {reply, {components, State#state.components}, State};
 
-% set nodes to forever (lifetime of stack) contain the current [node()|erlang:nodes()
-handle_call(lock_nodes, _From, State) ->
-  StateWithNodes = State#state{nodes = lists:sort([node() | erlang:nodes()] )},
-  {reply, StateWithNodes#state.nodes, StateWithNodes};
-
-% return all nodes known at stack launch (including ones who have since crashed)
-handle_call(get_nodes, _From, State) ->
-  {reply, State#state.nodes, State};
 
 % shut down the stack
 handle_call(stop, _From, State) ->
+  gen_server:call(stacknodes, stop),
   gen_server:call(fll_transmit, stop),
   {stop, normal, ok, State}.
 
@@ -167,20 +163,24 @@ code_change(_OldVsn, State, _Extra) ->
 % launch component (and dependencies) if not already running
 % returns set of newly launched components
 launch_component_and_dependencies_if_missing(Component) ->
-  case is_component_running(Component) of
+  launch_component_and_dependencies_if_missing(Component, Component).
+launch_component_and_dependencies_if_missing(Module, Instance) ->
+  case is_component_running(Instance) of
     false ->
+      io:format("launching ~w at ~w~n",[Module, Instance]),
       % launch component before recursing on dependencies to break dependency loops
       % Link components so when a component crashes the whole stack crashes
-      Component:start_link(),
+      component:start_link(Module, Instance),
       % launch missing dependencies and return launched component set
-      ?STACKSET:add_element(Component,  start_component_dependencies(Component));
+      ?STACKSET:add_element(Instance,  start_component_dependencies(Module));
     true ->
+      io:format("skipping ~w already running~n",[Instance]),
       ?STACKSET:new()
   end.
 
 
 % returns a (possibly empty) set of launched dependencies
-start_component_dependencies(Component) ->
+start_component_dependencies(Module) ->
   ?STACKSET:union(
     lists:map( fun(Dependency) ->
         % recursion is circular-dependency safe since is_component_running relies
@@ -188,11 +188,12 @@ start_component_dependencies(Component) ->
         % which is called before start_component_dependencies
         launch_component_and_dependencies_if_missing(Dependency)
       end,
-      uses(Component)
+      uses(Module)
     )
   ).
 
 % returns component dependencies, a list of other components
+% assumes component instance name = module name
 uses(Component) ->
   Component:uses().
 

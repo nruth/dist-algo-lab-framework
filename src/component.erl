@@ -2,24 +2,33 @@
 -behaviour(gen_server).
 
 -export([
-start_link/1, stop/1, start_timer/1, start_timer/2,
+start_link/2, stop/1, start_timer/1, start_timer/2,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
 -record(state, {
   component,
+  instance,
   component_state=nil
 }).
 
 
-init([Component]) ->
-  stack:trigger_one_receiver(Component, init),
-  {ok, #state{component=Component}}.
+init([Component, Instance]) ->
+  % call arity 1 or 2 init handler, use the one that returns a state change
+  InitState = case Component:upon_event({init, Instance}, nostate) of
+    nostate ->
+      Component:upon_event(init, nostate);
+    State ->
+      State
+  end,
+  {ok,
+    #state{ component=Component, instance=Instance, component_state=InitState}
+  }.
 
 
-start_link(Component) ->
+start_link(Component, Instance) ->
   %% http://erldocs.com/R15B/stdlib/gen_server.html#start_link/4
-  gen_server:start_link({local, Component}, ?MODULE, [Component], []).
+  gen_server:start_link({local, Instance}, ?MODULE, [Component, Instance], []).
 
 
 stop(Component) ->
@@ -31,7 +40,7 @@ start_timer(Duration) ->
 
 % send caller an event after Duration miliseconds
 start_timer(Duration, TimeoutEvent) ->
-  timer:apply_after(Duration,
+  {ok, _TRef} = timer:apply_after(Duration,
     stack, trigger_one_receiver, [self(), TimeoutEvent]
   ).
 
