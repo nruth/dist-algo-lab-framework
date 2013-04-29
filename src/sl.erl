@@ -3,7 +3,7 @@
 -export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
 -record(state, {sent}).
 
--define(RESEND_PERIOD, 3000).
+-define(RESEND_PERIOD, 2000).
 
 uses() -> [fll].
 

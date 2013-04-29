@@ -3,7 +3,7 @@
 -export([ uses/0, upon_event/2, stop/0 ]).
 -record(state, {alive, detected}).
 
--define(DELTA, 10000).
+-define(DELTA, 12000).
 
 uses() -> [pl].
 
@@ -34,6 +34,7 @@ upon_event(timeout, State) ->
         true ->
           % no reply received, add to crashed
           stack:trigger({p, crash, PNode}),
+          io:format("DECLARING CRASHED, ~w~n", [PNode]),
           sets:add_element(PNode, DetectedAccum);
         false ->
           DetectedAccum
