@@ -7,8 +7,17 @@ Most recent changes first
 
 - resolved an initialisation race condition
 
-You may remove the start_link functions from your components.
+- You may delete the start_link functions from your components.
 
+- adds stack:rank(Node) to get back deterministic 1..N position of Node in
+  stack:nodes()
+
+  changed files:
+
+  include/stack_state.hrl
+  src/component.erl
+  src/stack.erl
+  src/stacknodes.erl
 
 
 # From eb7c78ef6d9be370f to 75aba99012d40fc9d3
