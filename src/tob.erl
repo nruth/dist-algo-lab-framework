@@ -1,7 +1,7 @@
 % consensus-based total order broadcast
 -module(tob).
 
--export([ uses/0, upon_event/2, stop/0 ]).
+-export([ uses/0, upon_event/2, stop/0, broadcast/1 ]).
 -record(state, {unordered, delivered, round, wait}).
 
 uses() -> [rb, hierarchical_consensus].
@@ -9,11 +9,14 @@ uses() -> [rb, hierarchical_consensus].
 stop() ->
   component:stop(?MODULE).
 
+broadcast(Msg) ->
+  stack:trigger({tob, broadcast, Msg}).
+
 % run consensus on unordered set if not already running
 consensus(State) ->
-  case (State#state.unordered =/= sets:new()) and (State#state.wait == false) of
+  case (State#state.unordered =/= ordsets:new()) and (State#state.wait == false) of
     true ->
-      heirarchical_consensus:propose(State#state.unordered, State#state.round),
+      hierarchical_consensus:propose(State#state.unordered, State#state.round),
       State#state{wait=true};
     false ->
       State
@@ -21,40 +24,60 @@ consensus(State) ->
 
 upon_event(init, _) ->
   #state{
-    unordered=sets:new(),
-    delivered = sets:new(),
+    unordered= ordsets:new(),
+    delivered = ordsets:new(),
     round = 1,
     wait = false
   };
 
 
-upon_event({tob, broadcast, Msg}, _State) ->
-  stack:trigger({rb, broadcast, Msg});
+upon_event({tob, broadcast, Msg}, State) ->
+  stack:trigger({rb, broadcast, {tob, make_ref(), Msg}}),
+  State;
 
-upon_event({rb, deliver, PSender, Msg}, State) ->
-  StateMaybeNewMsg = case sets:is_element(Msg, State#state.delivered) of
+upon_event({rb, deliver, PSender, {tob, Id, Msg}}, State) ->
+  StateMaybeNewMsg = case ordsets:is_element({Id, Msg}, State#state.delivered) of
     true ->
       State;
-    false ->
-      State#state{unordered = sets:add_element({PSender, Msg}, State#state.unordered)}
+    _ ->
+      State#state{unordered = ordsets:add_element({PSender, Id, Msg}, State#state.unordered)}
   end,
   consensus(StateMaybeNewMsg);
 
 upon_event({hierarchical_consensus, Round, decide, Decided}, State)
   when State#state.round == Round ->
+    io:format("TOB receiving consensus result ~w ~w~n", [Round, Decided]),
     % sort and tob deliver the set of messages agreed on for this delivery round
-    lists:foreach(
-      fun ({PSender, Msg}) -> stack:trigger({tob, deliver, PSender, Msg}) end,
-      lists:sort(sets:to_list(Decided))
+    DeliveryList = lists:sort(ordsets:to_list(Decided)),
+    io:format("TOB delivering ~w~n", [DeliveryList]),
+    lists:map(
+      fun ({PSender, _Id, Msg}) -> stack:trigger({tob, deliver, PSender, Msg}) end,
+      DeliveryList
     ),
     % see book errata regarding new value of delivered
-    Msgs = sets:map(fun ({_PSender, Msg}) -> Msg end, Decided),
-    State#state{
-      delivered = sets:union(Msgs, State#state.delivered),
-      unordered = sets:remove(Decided, State#state.unordered),
+    Msgs = lists:map(
+      fun ({_PSender, _Id, Msg}) -> Msg end,
+      DeliveryList
+    ),
+    %% io:format("Updating state~w~n", [State]),
+    AfterDeliveryState = State#state{
+      delivered = ordsets:union(Msgs, ordsets:from_list(State#state.delivered)),
+      unordered = ordsets:subtract(State#state.unordered, Decided),
       round = State#state.round + 1,
       wait = false
-    };
+    },
+    %% io:format("Updated state~w~n", [AfterDeliveryState]),
+    AfterDeliveryState;
+
+upon_event({hierarchical_consensus, Round, decide, Decided}, State) ->
+    io:format("TOB received ~w waiting for ~w ~n", [Round, State#state.round]),
+    % TODO: can deliver check and past decisions buffer
+    % TODO: or change consensus to barrier-sync on new-round installation with live nodes so round is only ever current round, so that WAIT var actually works!
+    State;
+
+upon_event({tob, deliver, PSender, Msg}, State) ->
+  io:format("TOB DELIVER ~w from ~w~n", [Msg, PSender]),
+  State;
 
 % base case, for events this module is not interested in
 upon_event(_Other, State) ->
