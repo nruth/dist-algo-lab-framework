@@ -78,11 +78,6 @@
 
 \maketitle
 
-\section*{Due date} % (fold)
-\label{sec:due_date}
-The work is due on the evening of Friday the 3rd of May.
-% section section_name (end)
-
 
 \section*{Introduction}
 
@@ -107,7 +102,8 @@ decided to one-up their competitor. They've given the following specification:
   \item[\emph{Improvisation}] The sequence of dance steps is created by the robots
   \emph{during} each performance. It is not known beforehand.
 
-  \item[\emph{Spontaneity}] The robots can plan no more than 5 steps in advance, so we can change the song.
+  % causes problem with holdback queue for total-order-broadcast
+  % \item[\emph{Spontaneity}] The robots can plan no more than 5 steps in advance, so we can change the song.
 
 \end{itemize}
 
@@ -175,6 +171,31 @@ To familiarise yourself with the programming framework and basic abstractions
 be sure to complete the lab ``LSINF2345 Lab: Implementing the basic
 abstractions''.
 
+
+\subsection*{Installing Erlang with wxWidgets} % (fold)
+\label{sub:installing_erlang_and_wx}
+
+Be sure to install (or build) Erlang with wxWidgets for the graphical
+component of the assignment, otherwise the program will not compile and you
+will get strange error messages when trying to run the stack.
+
+Mac users (10.8) should use 32-bit Erlang from
+\url{https://www.erlang-solutions.com/downloads/download-erlang-otp}. 64-bit
+Erlang's wxWidget library does not work on recent Mac OSes. This
+company also provides builds for other platforms.
+
+If there are problems please let me know well in advance of the deadline.
+That means install now and check wx works, even if you plan to procrastinate
+(not advised).
+
+Windows users are advised to use Linux in a virtual machine (such as VMWare or
+Virtualbox): though Erlang for Windows does exist the scripts provided are for
+Mac / Linux. On Windows it may be necessary to use ``werl'' instead of ``erl''.
+
+% subsection installing_erlang_and_wx (end)
+
+
+
 \subsection*{Running the software} % (fold)
 \label{sub:running_the_software}
 
@@ -222,34 +243,11 @@ Your software will be tested with 32-bit Erlang R16B.
 \label{sub:marking}
 
 The assignment is out of a maximum of 20 points. The points for each section
-are explained in their ``deliverables'' section. The main work is to complete
-problems 0-3, which are worth a total of 15 points. 1 discretionary point is
-available for a nicely presented report and implementation code. If you
-are careful with your program and submit a nice report you can get 16/20
-without attempting the extension work. Completing all of the extension tasks
-makes it possible to get a very good score without having perfect answers for
-every activity.
+are explained in their ``deliverables'' section. 1 discretionary point is
+available for a nicely presented report and implementation code.
 
 % subsection subsection_name (end)
 
-
-\subsection*{Installing Erlang with wxWidgets} % (fold)
-\label{sub:installing_erlang_and_wx}
-
-Be sure to install (or build) Erlang with wxWidgets for the graphical
-component of the assignment, otherwise the program will not compile and you
-will get strange error messages when trying to run the stack.
-
-Mac users (10.8) should use 32-bit Erlang from
-\url{https://www.erlang-solutions.com/downloads/download-erlang-otp}. 64-bit
-Erlang's wxWidget library does not work on recent Mac OSes. This
-company also provides builds for other platforms.
-
-If there are problems please let me know well in advance of the deadline.
-That means install now and check wx works, even if you plan to procrastinate
-(not advised).
-
-% subsection installing_erlang_and_wx (end)
 
 
 \subsection*{Where to find help} % (fold)
@@ -260,7 +258,8 @@ manual\footnote{\url{http://www.erlang.org/doc/apps/stdlib/index.html}}, and
 possibly \url{http://erldocs.com}.
 To better understand the algorithms, refer to the course slides or textbook
 \cite{cachin2011}.
-The assistant will announce their availability separately.
+The assistant will announce their availability separately. Ask them about
+Erlang problems, or to discuss your design.
 It's ok to talk to the other students about how to solve the problems, but
 don't copy their code.
 
@@ -272,7 +271,7 @@ don't copy their code.
 
 
 
-\section*{Problem 0: Setting the stage, the uncoordinated robots [1~point]} % (fold)
+\section*{Problem 0: Setting the stage, the uncoordinated robots [2~point]} % (fold)
 \label{sec:p0}
 
 We start by reproducing the naïve software, where no robot fails and no
@@ -305,7 +304,7 @@ observed or problems you have spotted with this design.
 
 
 
-\section*{Problem 1: Lost and delayed messages, disorganised dancing [5~points]} % (fold)
+\section*{Problem 1: Lost and delayed messages, disorganised dancing [8~points]} % (fold)
 \label{sec:dealing_with_unreliable_links}
 
 Having reproduced the team's design, let's investigate how it will behave on
@@ -321,7 +320,7 @@ of our robots (indeed, they are essentially a replicated-state-machine): the
 dance steps must be totally ordered across the robots.
 
 Assuming the omission failure model, design two solutions to the total
-ordering problem.
+ordering problem. Implement your favourite.
 \begin{enumerate}
 
   \item A nominated leader decides the dance steps, broadcasts them with a
@@ -332,6 +331,8 @@ ordering problem.
 
 \end{enumerate}
 
+
+
 \subsection*{Deliverable} % (fold)
 \label{sub:p1_deliverable}
 
@@ -339,15 +340,16 @@ Explain your solutions in your report. Aim for about one page.
 In particular, explain how you have addressed the new
 problems of dropped and delayed messages.
 
-Implement both of them in modified (renamed) copies of the
+Implement your chosen solution in modified (renamed) copies of the
 \emph{dancing\_robots} module. Name them \emph{dancing\_leader} and
-\emph{dancing\_bcast}. Optionally, in a further 150 or fewer words, describe any
-interesting implementation details or challenges you faced.
+\emph{dancing\_bcast}. Optionally, in a further 150 or fewer words, describe
+any interesting implementation details.
 
 Your software will be tested by checking the finishing position and dance
 sequence of each robot in the group. You can access the steps and position
-with the event \verb!{dancerobot, get_steps}!, which currently prints them
-to terminal.
+with the event \verb!{dancerobot, get_steps}!, which currently prints them to
+terminal. You might also like to add a final-steps announcement broadcast
+from each robot who reaches the end of the dance.
 
 % subsection deliverable (end)
 
@@ -362,7 +364,7 @@ to terminal.
 
 
 
-\section*{Problem 2: Failing nodes with a bounded (synchronous) network [4~points]} % (fold)
+\section*{Problem 2: Failing nodes with a bounded (synchronous) network [8~points]} % (fold)
 \label{sec:problem_2_failing_nodes}
 
 \begin{quote}
@@ -449,18 +451,38 @@ The \emph{fll} \verb!MAX_DELAY! will be 2500 ms, and \emph{sl}
 
 
 
+\section*{Extension: Optimising the point-to-point links [Optional: 2~points]} % (fold)
+\label{sec:extension_optimising_the_link_channels}
+
+The \emph{pl}, \emph{sl}, \emph{fll} messaging stack is theoretically correct,
+but expensive in practice. Can you modify it so that fewer messages are sent,
+without risking that messages are not delivered?
+
+Can you think of a way to safely garbage-collect the stored and retransmitted
+messages? How else might you optimise \emph{pl}, \emph{sl}, \emph{fll}? Refer to the
+performance clauses of sections 2.4.3-4 of \cite{cachin2011} for ideas.
+Consider the consequences of node failures and the various failure models
+with the algorithms and your changes.
+
+Deliver the files as usual, and also a discussion of what you have done and
+why you believe it is correct in the report. Check your robots still work
+with the changes you have made (as we will only test and mark it with your
+optimisations in place).
+
+% section extension_optimising_the_link_channels (end)
 
 
 
 
 
 
-
-\section*{Problem 3: Failing nodes in partial synchrony [5 points]} % (fold)
+\section*{Extension: Failing nodes in partial synchrony [Optional: 5 points]} % (fold)
 \label{sec:problem_3_partial_synchrony}
 
 \begin{quote}
-  \emph{``Someone misunderstood the `communication' budget and allocated it to novelty keyrings. What's wrong with wifi anyway?'' -- Project manager, when asked when the leased-line specifications will arrive.}
+  \emph{``Someone misunderstood the `communication' budget and allocated it to novelty keyrings.
+  What's wrong with wifi anyway?'' -- Project manager, when asked when the leased-line specifications will arrive.
+  }
 \end{quote}
 
 
@@ -538,7 +560,7 @@ what happens if all but one of the robots fails, will the dance complete?
 
 
 
-\section*{Extension: ``They've got no rhythm'' [2~points]} % (fold)
+\section*{Extension: ``They've got no rhythm'' [Optional: 2~points]} % (fold)
 \label{sec:buffered_dance_routine}
 
 While we have solved the issue of the robots dancing the same steps in the
@@ -572,32 +594,7 @@ the failure modes and communication abstraction.
 
 
 
-\section*{Extension: Optimising the point-to-point links [2~points]} % (fold)
-\label{sec:extension_optimising_the_link_channels}
-
-The \emph{pl}, \emph{sl}, \emph{fll} messaging stack is theoretically correct,
-but expensive in practice. Can you modify it so that fewer messages are sent,
-without risking that messages are not delivered?
-
-Can you think of a way to safely garbage-collect the stored and retransmitted
-messages? How else might you optimise \emph{pl}, \emph{sl}, \emph{fll}? Refer to the
-performance clauses of sections 2.4.3-4 of \cite{cachin2011} for ideas.
-Consider the consequences of node failures and the various failure models
-with the algorithms and your changes.
-
-Deliver the files as usual, and also a discussion of what you have done and
-why you believe it is correct in the report. Check your robots still work
-with the changes you have made (as we will only test and mark it with your
-optimisations in place).
-
-% section extension_optimising_the_link_channels (end)
-
-
-
-
-
-
-\section*{Extension: Same-room dancing robots [2~points]} % (fold)
+\section*{Extension: Same-room dancing robots [Optional: 2~points]} % (fold)
 \label{sec:extension_same_room_dancing_robots}
 
 Consider again the close-proximity robots in this video:
@@ -605,12 +602,11 @@ Consider again the close-proximity robots in this video:
 performance with our robots, members of the public commented that some of the
 robots seemed to be dancing out-of-time with the others.
 
-Describe a mechanism for keeping the group of
-robots (while dancing in the same room, assuming a private and uncongested
-network interconnection) in time with each other, without recourse to a
-hypothetical global clock. Discuss which of the previous designs would be most
-appropriate in this setting, and any changes you might make to it.
-You are not expected to implement this solution.
+Describe a mechanism for keeping the group of robots (while dancing in the
+same room, assuming a private and uncongested interconnection) in time with
+each other, without recourse to a hypothetical global clock. Discuss which of
+the previous designs would be most appropriate in this setting, and any
+changes you might make to it. You are not expected to implement this solution.
 
 % section extension_same_room_dancing_robots (end)
 
