@@ -1,6 +1,6 @@
 Most recent changes first
 
-# From 75aba99012d40fc9d3
+# From 75aba99012d40fc9d3 to 250ce38bfe8562
 
 - It is now possible to launch instances of a component (for consensus).
     stack:add_component(hierarchical_consensus, c_round_1).
