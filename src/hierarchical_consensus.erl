@@ -105,9 +105,10 @@ upon_event(_Other, State) ->
 
 
 rank(Node) ->
-  IndexedNodes = lists:zip(stack:nodes(), lists:seq(1, length(stack:nodes()))),
-  {_Val, Idx} = lists:keyfind(Node, 1, IndexedNodes),
-  Idx.
+  stack:rank(Node).
+  %% IndexedNodes = lists:zip(stack:nodes(), lists:seq(1, length(stack:nodes()))),
+  %% {_Val, Idx} = lists:keyfind(Node, 1, IndexedNodes),
+  %% Idx.
 
 
 

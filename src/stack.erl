@@ -5,7 +5,7 @@
 -export([
 start_link/0, stop/0, boot/0, boot/1, launch_cluster_application/1, halt_cluster/0,
 add_component/1, add_component/2, query_components/0, trigger/1, trigger_one_receiver/2,
-nodes/0, connect/1,
+nodes/0, connect/1, rank/1,
 init/1, code_change/3, handle_call/3, handle_cast/2, handle_info/2, terminate/2
 ]).
 
@@ -65,6 +65,13 @@ connect(Node) ->
 % get all nodes (those present when launch_cluster_application called)
 nodes() ->
   stacknodes:nodes().
+
+% return the integer position of Node in stack:nodes (1..length(stack:Nodes))
+rank(Node) ->
+  IndexedNodes = lists:zip(stack:nodes(), lists:seq(1, length(stack:nodes()))),
+  {_Val, Idx} = lists:keyfind(Node, 1, IndexedNodes),
+  Idx.
+
 
 % returns the currently registered components
 query_components() ->
