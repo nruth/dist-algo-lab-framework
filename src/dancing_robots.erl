@@ -8,7 +8,7 @@
 -define(FRAME_WIDTH, 400).
 -define(FRAME_PADDING , 50).
 
--define(TEMPO, 1000).
+-define(TEMPO, 3000).
 -define(STEPS, 100).
 
 
@@ -18,16 +18,21 @@
   x=round(?FRAME_WIDTH/2), y=round(?FRAME_HEIGHT/2), bearing=0
 }).
 
-uses() -> [beb].
+uses() -> [tob].
 
 % insert the trigger for the chosen broadcast abstraction here, e.g. beb
 broadcast(Msg) ->
-  stack:trigger({beb, broadcast, {dancerobot, Msg}}).
+  stack:trigger({tob, broadcast, {dancerobot, Msg}}).
 
 % catch any broadcast from the chosen broadcast mechanism
 % change beb to match your choice of broadcast algo
-upon_event({beb, deliver, _Sender, {dancerobot, Msg}}, State) ->
+upon_event({tob, deliver, _Sender, {dancerobot, Msg}}, State) ->
+  io:format("ROBOT DELIVER TOB MSG ~w~n", [Msg]),
   process_broadcast(Msg, State);
+
+%% upon_event({tob, deliver, _Sender, Msg}, State) ->
+%%   io:format("ROBOT DELIVER TOB MSG ~w~n", [Msg]);
+%%   %% process_broadcast(Msg, State);
 
 % initialise to a state that shows the robot and is ready to receive moves
 upon_event(init, _) ->
@@ -63,7 +68,7 @@ upon_event(timeout, State=#state{proposing_moves = true}) ->
     Others -> Others
   end,
   % io:format("NEXT MOVE: ~w~n", [NextStep]),
-  stack:trigger({beb, broadcast,{dancerobot, NextStep}}),
+  broadcast(NextStep),
   % continue proposing_moves
   component:start_timer(?TEMPO),
   State;
