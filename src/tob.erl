@@ -4,7 +4,7 @@
 -export([ uses/0, upon_event/2, stop/0, broadcast/1 ]).
 -record(state, {decided, unordered, delivered, round, wait}).
 
-uses() -> [rb, hierarchical_consensus].
+uses() -> [rb, hc].
 
 stop() ->
   component:stop(?MODULE).
@@ -36,12 +36,12 @@ upon_event({rb, deliver, PSender, {tob, Id, Msg}}, State) ->
   end,
   consensus(StateMaybeNewMsg);
 
-%% upon_event({hierarchical_consensus, Round, decide, Decided}, State)
+%% upon_event({hc, Round, decide, Decided}, State)
 %%   when State#state.round == Round ->
 %%     io:format("TOB receiving consensus result ~w ~w~n", [Round, Decided]),
 
 
-upon_event({hierarchical_consensus, Round, decide, Decided}, State) ->
+upon_event({hc, Round, decide, Decided}, State) ->
   % TODO: can deliver check and past decisions buffer
   % TODO: or change consensus to barrier-sync on new-round installation with live nodes so round is only ever current round, so that WAIT var actually works!
     io:format("TOB received ~w waiting for ~w ~n", [Round, State#state.round]),
@@ -97,7 +97,7 @@ deliver(Decided, State) ->
 consensus(State) ->
   case (State#state.unordered =/= ordsets:new()) and (State#state.wait == false) of
     true ->
-      hierarchical_consensus:propose(State#state.unordered, State#state.round),
+      hc:propose(State#state.unordered, State#state.round),
       State#state{wait=true};
     false ->
       State
