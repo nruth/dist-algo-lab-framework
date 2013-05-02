@@ -73,25 +73,25 @@ upon_event({?MODULE, Instance, propose, V}, AllState) ->
 
 % received broadcast msg e.g. {consensus, 1, decided, V}
 upon_event({beb, deliver, PFrom, {?MODULE, Instance, decided, V}}, AllState) ->
-  io:format("h consensus received ~w~n", [{beb, deliver, PFrom, {?MODULE, Instance, decided, V}}]),
+  %% io:format("h consensus received ~w~n", [{beb, deliver, PFrom, {?MODULE, Instance, decided, V}}]),
   Round = rank(PFrom),
   InstanceState = get_instance_state(Instance, AllState),
-  io:format("hc storing delivered ~w ~w ~w~n",[Instance, Round, true]),
+  %% io:format("hc storing delivered ~w ~w ~w~n",[Instance, Round, true]),
   InstanceState2 = InstanceState#instance{
     delivered = orddict:store(Round, true, InstanceState#instance.delivered)
   },
-  io:format("IState2 ~w~n",[InstanceState2]),
+  %% io:format("IState2 ~w~n",[InstanceState2]),
   InstanceState3 = case (Round < rank(node())) and (Round > InstanceState2#instance.proposer) of
     true ->
       InstanceState2#instance{proposal = V, proposer = Round};
     _ ->
       InstanceState2
   end,
-  io:format("IState3 ~w~n",[InstanceState3]),
+  %% io:format("IState3 ~w~n",[InstanceState3]),
   InstanceState4 = check_round_condition(InstanceState3, AllState#state.detectedranks),
-  io:format("IState4 after round condition ~w~n",[InstanceState4]),
+  %% io:format("IState4 after round condition ~w~n",[InstanceState4]),
   NewAllState = replace_state_instance(Instance, check_decide(InstanceState4), AllState),
-  io:format("NewAllState ~w~n",[NewAllState]),
+  %% io:format("NewAllState ~w~n",[NewAllState]),
   NewAllState;
 
 
@@ -126,24 +126,23 @@ check_round_condition_all_instances(AllState) ->
 % Calls check-broadcast when round changes.
 % returns instance state
 check_round_condition(InstanceState, Detectedranks) ->
-  io:format("Checking if round should increase: ~w detectedranks ~w~n", [InstanceState, Detectedranks]),
+  %% io:format("Checking if round should increase: ~w detectedranks ~w~n", [InstanceState, Detectedranks]),
   RoundDelivered = case orddict:find(InstanceState#instance.round,
     InstanceState#instance.delivered) of
     {ok, true}  ->
-      io:format("Have received decision of node (round) ~w~n", [InstanceState#instance.round]),
+      %% io:format("Have received decision of node (round) ~w~n", [InstanceState#instance.round]),
       true;
     _ ->
-      io:format("Have not received decision of node (round) ~w~n",[InstanceState#instance.round]),
+      %% io:format("Have not received decision of node (round) ~w~n",[InstanceState#instance.round]),
       false
   end,
   case ordsets:is_element(InstanceState#instance.round, Detectedranks) or RoundDelivered of
     true ->
-      % TODO : round increase is not working for node 3 or above, only 1 and 2
       InstanceState2 = InstanceState#instance{round = (InstanceState#instance.round) + 1},
-      io:format("Consensus ROUND increased, ~w~n", [InstanceState]),
+      %% io:format("Consensus ROUND increased, ~w~n", [InstanceState]),
       check_decide(check_round_condition(InstanceState2, Detectedranks));
     _ ->
-      io:format("Consensus ROUND unchanged: not seen current round and it has not failed, ~w~n", [InstanceState]),
+      %% io:format("Consensus ROUND unchanged: not seen current round and it has not failed, ~w~n", [InstanceState]),
       InstanceState
   end.
 
@@ -165,9 +164,9 @@ check_decide(InstanceState) ->
       }),
       stack:trigger({?MODULE, InstanceState#instance.instance, decide,
         InstanceState#instance.proposal}),
-      io:format("Decided no for Instance ~w, Round ~w, Proposal ~w, Broadcast ~w~n", [InstanceState#instance.instance, InstanceState#instance.round, InstanceState#instance.proposal, InstanceState#instance.broadcast]),
+      %% io:format("Decided no for Instance ~w, Round ~w, Proposal ~w, Broadcast ~w~n", [InstanceState#instance.instance, InstanceState#instance.round, InstanceState#instance.proposal, InstanceState#instance.broadcast]),
       InstanceState#instance{broadcast=true};
     _ ->
-      io:format("Decided no for Instance ~w, Round ~w, Proposal ~w, Broadcast ~w~n", [InstanceState#instance.instance, InstanceState#instance.round, InstanceState#instance.proposal, InstanceState#instance.broadcast]),
+      %% io:format("Decided no for Instance ~w, Round ~w, Proposal ~w, Broadcast ~w~n", [InstanceState#instance.instance, InstanceState#instance.round, InstanceState#instance.proposal, InstanceState#instance.broadcast]),
       InstanceState
   end.

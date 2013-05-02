@@ -44,12 +44,12 @@ upon_event({rb, deliver, PSender, {tob, Id, Msg}}, State) ->
 upon_event({hc, Round, decide, Decided}, State) ->
   % TODO: can deliver check and past decisions buffer
   % TODO: or change consensus to barrier-sync on new-round installation with live nodes so round is only ever current round, so that WAIT var actually works!
-    io:format("TOB received ~w waiting for ~w ~n", [Round, State#state.round]),
+    %% io:format("TOB received ~w waiting for ~w ~n", [Round, State#state.round]),
     try_deliver(State#state{decided = orddict:store(Round, Decided, State#state.decided)});
 
 
 upon_event({tob, deliver, PSender, Msg}, State) ->
-  io:format("TOB DELIVER ~w from ~w~n", [Msg, PSender]),
+  %% io:format("TOB DELIVER ~w from ~w~n", [Msg, PSender]),
   State;
 
 % base case, for events this module is not interested in
