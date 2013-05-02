@@ -8,7 +8,7 @@
 -define(FRAME_WIDTH, 400).
 -define(FRAME_PADDING , 50).
 
--define(TEMPO, 3000).
+-define(TEMPO, 2000).
 -define(STEPS, 100).
 
 
@@ -18,7 +18,7 @@
   x=round(?FRAME_WIDTH/2), y=round(?FRAME_HEIGHT/2), bearing=0
 }).
 
-uses() -> [tob].
+uses() -> [tob, tob_playout_buffer].
 
 % insert the trigger for the chosen broadcast abstraction here, e.g. beb
 broadcast(Msg) ->
@@ -26,7 +26,7 @@ broadcast(Msg) ->
 
 % catch any broadcast from the chosen broadcast mechanism
 % change beb to match your choice of broadcast algo
-upon_event({tob, deliver, _Sender, {dancerobot, Msg}}, State) ->
+upon_event({tob_playout_buffer, deliver, _Sender, {dancerobot, Msg}}, State) ->
   io:format("ROBOT DELIVER TOB MSG ~w~n", [Msg]),
   process_broadcast(Msg, State);
 
