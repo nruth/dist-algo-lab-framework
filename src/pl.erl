@@ -23,7 +23,7 @@ upon_event({pl, send, DestinationNodeQ, Msg}, State) ->
 % only match sl delivered messages which pl sent
 upon_event({sl, deliver, SenderNodeP, WrappedMsg={pl, Id, Msg}}, State) ->
   % acknowledg message to halt retransmission
-  stack:trigger({fll, send, SenderNodeQ, {sl, ack, WrappedMsg}}),
+  stack:trigger({fll, send, SenderNodeP, {sl, ack, WrappedMsg}}),
   % only deliver messages not previously delivered
   State#state{
     delivered =  case sets:is_element(Id, State#state.delivered) of
