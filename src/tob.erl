@@ -48,9 +48,9 @@ upon_event({hc, Round, decide, Decided}, State) ->
     try_deliver(State#state{decided = orddict:store(Round, Decided, State#state.decided)});
 
 
-upon_event({tob, deliver, PSender, Msg}, State) ->
+%% upon_event({tob, deliver, PSender, Msg}, State) ->
   %% io:format("TOB DELIVER ~w from ~w~n", [Msg, PSender]),
-  State;
+  %% State;
 
 % base case, for events this module is not interested in
 upon_event(_Other, State) ->

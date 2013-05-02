@@ -61,7 +61,7 @@ upon_event({?MODULE, Instance, propose, V}, AllState) ->
   InstanceState = get_instance_state(Instance, AllState),
   InstanceState2 = case InstanceState#instance.proposal of
     bottom ->
-      io:format("~w ~w proposing initial: ~w~n", [?MODULE, Instance, V]),
+      %% io:format("~w ~w proposing initial: ~w~n", [?MODULE, Instance, V]),
       InstanceState#instance{proposal = V};
     _ ->
       InstanceState
@@ -95,9 +95,9 @@ upon_event({beb, deliver, PFrom, {?MODULE, Instance, decided, V}}, AllState) ->
   NewAllState;
 
 
-upon_event({?MODULE, Instance, decide, Decided}, State) ->
-  io:format("!!! Consensus DECIDED ~w ~w: ~w~n",[?MODULE, Instance, Decided]),
-  State;
+%% upon_event({?MODULE, Instance, decide, Decided}, State) ->
+%%   io:format("!!! Consensus DECIDED ~w ~w: ~w~n",[?MODULE, Instance, Decided]),
+%%   State;
 
 upon_event(_Other, State) ->
   %% io:format("~w ignoring event ~w~n", [?MODULE, _Other]),
