@@ -10,13 +10,13 @@ OTP template generator / build tool: https://github.com/basho/rebar/wiki/Getting
 
 set in rebar.config:
 
-  {erl_opts, [debug_info]}.
+    {erl_opts, [debug_info]}.
 
 
 
 # running rebar compiled code in the erl shell
 
-  cd(ebin).
+    cd(ebin).
 
 so that the compiled modules are accessible. You don't need to compile with
 "c" inside erl, but will want to restart erl after recompiling to make sure
