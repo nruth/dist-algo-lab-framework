@@ -1,0 +1,1 @@
+For this project to make sense, remove all component files higher than sl in the stack from the src directory.
