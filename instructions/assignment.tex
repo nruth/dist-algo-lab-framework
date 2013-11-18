@@ -285,7 +285,8 @@ When developing this stage check that the ``reliable'' state variable of
 
 It is possible that you will already observe strange behaviour. Think about
 the properties of \emph{beb}, and the way in which the robots are periodically
-broadcasting what they think should be the next dance move.
+broadcasting what they think should be the next dance move. Should they be
+receiving the same sequence of steps, or are we just lucky?
 
 \subsection*{Deliverables} % (fold)
 \label{sub:p0_deliverables}
@@ -315,22 +316,29 @@ Run the dancing robot  simulation again, and observe how its behaviour has
 changed. Are the invariants of the product specification maintained or
 violated?
 
-You will soon realise that message ordering is important to maintain the state
-of our robots (indeed, they are essentially a replicated-state-machine): the
-dance steps must be totally ordered across the robots.
+You will soon realise that the robots are receiving instructions in different
+orders, making them do a different dance. In order to fix this, you should
+make sure all robots receive the same message sequence. To start with
+something simple assume no robots will fail, and have one robot tell all of
+the others what to do.
 
-Assuming the omission failure model, design two solutions to the total
-ordering problem. Implement your favourite.
-\begin{enumerate}
+\subsection*{Activity} % (fold)
+\label{sub:p1_activity}
 
-  \item A nominated leader decides the dance steps, broadcasts them with a
-  point-to-point (but not global) ordering guarantee
+Design an algorithm stack which will have
+one robot decide the dance steps and send them to the other robots. Ensure
+that each robot receives the steps in the same order.
 
-  \item Allow all robots to suggest dance steps, as before, but totally order
-  delivery and execution of their broadcasts
 
-\end{enumerate}
+% subsection subsection_name (end)
 
+
+\subsection*{Failure model} % (fold)
+\label{sub:p1_failure_model}
+
+Assume no robot will crash, but messages can be lost and delayed.
+
+% subsection failure_model (end)
 
 
 \subsection*{Deliverable} % (fold)
