@@ -27,11 +27,11 @@ broadcast(Msg) ->
 % catch any broadcast from the chosen broadcast mechanism
 % change beb to match your choice of broadcast algo
 upon_event({tob_playout_buffer, deliver, _Sender, {dancerobot, Msg}}, State) ->
-  io:format("ROBOT DELIVER TOB MSG ~w~n", [Msg]),
+  io:format("ROBOT DELIVER MSG ~w~n", [Msg]),
   process_broadcast(Msg, State);
 
 %% upon_event({tob, deliver, _Sender, Msg}, State) ->
-%%   io:format("ROBOT DELIVER TOB MSG ~w~n", [Msg]);
+%%   io:format("ROBOT DELIVER MSG ~w~n", [Msg]);
 %%   %% process_broadcast(Msg, State);
 
 % initialise to a state that shows the robot and is ready to receive moves
