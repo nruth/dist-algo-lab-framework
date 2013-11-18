@@ -7,7 +7,7 @@
 % upper bound of uniformly sampled delay range (from 0 to MAX_DELAY)
 -define(MAX_DELAY, 2500).
 
--record(state, {reliable = false}).
+-record(state, {reliable = true}).
 
 uses() ->
   [].

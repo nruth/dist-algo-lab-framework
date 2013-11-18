@@ -2,8 +2,8 @@
 
 -export([ uses/0, upon_event/2, stop/0 ]).
 
--define(PLAYBACK_PERIOD, 2000).
--define(PREBUFFER, 10).
+-define(PLAYBACK_PERIOD, 1000).
+-define(PREBUFFER, 15).
 
 -record(state, {
   queue = queue:new(), playing = false
