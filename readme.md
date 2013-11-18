@@ -30,48 +30,22 @@ open 2 terminals;
 
 terminal 1:
 
-  cd to this directory
-  ./rebar compile # should be no errors
-  erl -sname foo
-  cd(ebin).
-  stack:start_link().
-  stack:add_component(sl).
-  node().
+    cd to this directory
+    ./rebar compile # should be no errors
+    erl -sname foo
+    cd(ebin).
+    stack:start_link().
+    stack:add_component(sl).
+    node().
 
 terminal 2:
 
-  cd to this directory
-  erl -sname bar
-  cd(ebin).
-  stack:start_link().
-  stack:add_component(sl).
-  stack:trigger({sl, send, PUT_TERMINAL1_NODE_RESULT_HERE, knock_knock}).
-
-
-
-
-# run stack and test sl:
-
-open 2 terminals;
-
-terminal 1:
-
-  cd to this directory
-  ./rebar compile # should be no errors
-  erl -sname foo
-  cd(ebin).
-  stack:start_link().
-  stack:add_component(sl).
-  node().
-
-terminal 2:
-
-  cd to this directory
-  erl -sname bar
-  cd(ebin).
-  stack:start_link().
-  stack:add_component(sl).
-  stack:trigger({sl, send, PUT_TERMINAL1_NODE_RESULT_HERE, knock_knock}).
+    cd to this directory
+    erl -sname bar
+    cd(ebin).
+    stack:start_link().
+    stack:add_component(sl).
+    stack:trigger({sl, send, PUT_TERMINAL1_NODE_RESULT_HERE, knock_knock}).
 
 
 
@@ -82,22 +56,22 @@ open 2 terminals;
 
 terminal 1:
 
-  cd to this directory
-  ./rebar compile # should be no errors
-  erl -sname foo
-  cd(ebin).
-  stack:start_link().
-  stack:add_component(pl).
-  node().
+    cd to this directory
+    ./rebar compile # should be no errors
+    erl -sname foo
+    cd(ebin).
+    stack:start_link().
+    stack:add_component(pl).
+    node().
 
 terminal 2:
 
-  cd to this directory
-  erl -sname bar
-  cd(ebin).
-  stack:start_link().
-  stack:add_component(pl).
-  stack:trigger({pl, send, 'bar@ntr-macbook-pro', knock_knock}).
+    cd to this directory
+    erl -sname bar
+    cd(ebin).
+    stack:start_link().
+    stack:add_component(pl).
+    stack:trigger({pl, send, 'bar@ntr-macbook-pro', knock_knock}).
 
 
 
@@ -109,17 +83,20 @@ terminal 2:
 
 # run robots
 
-cd(ebin). stack:start_link(). stack:add_component(dancing_robots).
-stack:trigger({dancerobot, turn_left}).
-stack:trigger({dancerobot, turn_right}).
-stack:trigger({dancerobot, step_forward}).
-stack:trigger({dancerobot, step_back}).
+    cd(ebin). 
+    stack:start_link(). 
+    stack:add_component(dancing_robots).
+    stack:trigger({dancerobot, turn_left}).
+    stack:trigger({dancerobot, turn_right}).
+    stack:trigger({dancerobot, step_forward}).
+    stack:trigger({dancerobot, step_back}).
 
-cd(ebin).
-stack:start_link().
-stack:add_component(dancing_robots).
-stack:connect('n1@localhost').
-dancing_robots:start_dance().
+
+    cd(ebin).
+    stack:start_link().
+    stack:add_component(dancing_robots).
+    stack:connect('n1@localhost').
+    dancing_robots:start_dance().
 
 
 
