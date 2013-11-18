@@ -18,12 +18,14 @@ or total order broadcast by making use of simpler abstractions such
 as perfect links and point-to-point orderings, and making explicit the failure
 model assumed and detectors used.
 
+## Usage notes 
+
 The following are residual notes not yet cleaned up, and may not be useful
 documentation. The files
 projects/dancing-robot-project/lab3-implementing-basic-abstractions.pdf and
 projects/dancing-robot-project/assignment.pdf may be more useful.
 
-# bundling erlang code as applications
+### bundling erlang code as applications
 
 OTP defines the usual directory structure, best to just use this
 
@@ -31,7 +33,7 @@ how/why basis: http://learnyousomeerlang.com/designing-a-concurrent-application
 
 OTP template generator / build tool: https://github.com/basho/rebar/wiki/Getting-started
 
-# compiling debug info enabled code (for the debugger) with rebar
+### compiling debug info enabled code (for the debugger) with rebar
 
 set in rebar.config:
 
@@ -39,7 +41,7 @@ set in rebar.config:
 
 
 
-# running rebar compiled code in the erl shell
+### running rebar compiled code in the erl shell
 
     cd(ebin).
 
@@ -49,7 +51,7 @@ you have the latest beam files loaded (Erlang provides methods for updating
 code in a running system, but it's out-of-scope here).
 
 
-# run stack and test sl:
+### run stack and test sl:
 
 open 2 terminals;
 
@@ -75,7 +77,7 @@ terminal 2:
 
 
 
-# run stack and test pl:
+### run stack and test pl:
 
 open 2 terminals;
 
@@ -100,7 +102,7 @@ terminal 2:
 
 
 
-# run robots
+### run robots
 
     cp projects/dancing-robot-project/dancing_robots.erl src/
     ./rebar compile # should be no errors
