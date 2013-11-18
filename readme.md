@@ -1,3 +1,28 @@
+# Erlang Component Framework
+
+This project aims to be a faithful implementation of the component model
+presented in C. Cachin, R. Guerraoui, and L. Rodrigues, Introduction to
+Reliable and Secure Distributed Programming. Springer-Verlag, Berlin 2nd
+Edition, 2011. That said, this software is not even close to production quality. For more
+developed stacks we suggest [Appia](http://appia.di.fc.ul.pt/) or
+[Kompics](kompics.sics.se).
+
+
+Modules and applications are implemented as callback functions on an event model,
+where each component waits for messages published by components below it in the
+stack, its own state, and the messages it publishes for components or 
+applications higher in the stack.
+
+This approach eases building and reasoning about algorithms such as consensus 
+or total order broadcast by making use of simpler abstractions such
+as perfect links and point-to-point orderings, and making explicit the failure
+model assumed and detectors used.
+
+The following are residual notes not yet cleaned up, and may not be useful
+documentation. The files
+projects/dancing-robot-project/lab3-implementing-basic-abstractions.pdf and
+projects/dancing-robot-project/assignment.pdf may be more useful.
+
 # bundling erlang code as applications
 
 OTP defines the usual directory structure, best to just use this
@@ -77,20 +102,7 @@ terminal 2:
 
 # run robots
 
-    cd(ebin). 
-    stack:start_link(). 
-    stack:add_component(dancing_robots).
-    stack:trigger({dancerobot, turn_left}).
-    stack:trigger({dancerobot, turn_right}).
-    stack:trigger({dancerobot, step_forward}).
-    stack:trigger({dancerobot, step_back}).
+    cp projects/dancing-robot-project/dancing_robots.erl src/
+    ./rebar compile # should be no errors
 
-
-    cd(ebin).
-    stack:start_link().
-    stack:add_component(dancing_robots).
-    stack:connect('n1@localhost').
-    dancing_robots:start_dance().
-
-
-
+See robots assignment.pdf for launch instructions
