@@ -1,0 +1,83 @@
+Note: Windows users will need to change the file paths and commands to something familiar.
+
+# Erlang: basic message-passing on one node
+
+1. install erlang
+2. make yourself a workspace (e.g. mkdir ~/erlang), and go there
+3. put the following in wait.erl
+
+    -module(wait).
+    -export([hello/0]).
+
+    % Erlang is written with functions, so uses arguments, recursion, lists, tuples as you might expect
+    hello() ->
+        receive % block/wait until a message comes in, then pattern match the message
+          % on receiving a halt atom, return the ok atom
+          halt -> ok;
+
+          % assign any other message to a variable X, try to print it out, and recurse (loop until halt)
+          X -> io:format("aaa! surprise, a message: ~s~n", [X]), hello()
+        end.
+
+4. run erl from inside your source directory (or use pwd(). and 
+  cd('~/erlang'). functions to get there).
+
+5. compile the module: 
+
+  c(wait).
+
+6. Test the code locally, by spawning a process running the wait module's 
+  hello function without parameters:
+
+  MyProcess = spawn(wait, hello, []).
+
+7. Send a message to the spawned process:
+
+  MyProcess ! "Supper's ready".
+
+The shell will display the return value of the evaluated statement, and the 
+side-effect of the code: the message beginning "aaa! surprise".
+
+To halt the process (just for fun, else it'll die with the VM) 
+
+  MyProcess ! halt.
+
+To quit the erl shell use q(). (or ctrl-c a)
+
+
+
+# Erlang: basic message passing between 2 nodes on 1 machine
+
+1. Follow steps 1-3 from Erlang: basic message-passing on one node.
+2. Start 2 shell terminals
+3. In one terminal, start a locally-named VM:
+
+  erl -sname foo
+
+4. Spawn a registered listener process again:
+
+  P = spawn(wait, hello, []).
+  register(foo, P).
+
+5. Discover the (fake local) network identifier/address of the virtual machine
+
+  node().
+
+6. Start a second local VM:
+
+  erl -sname bar
+
+7. Send a message to the process registered as foo on the first node, using the address obtained from step 5:
+
+  {foo, "address string from step 5"} ! "networking is big business".
+
+
+# Erlang: connecting to a VM on another machine
+
+This should be similar to -sname, but using the parameters described by 
+Johan Montelius in the provided Erlang Primer, or by the method described 
+at http://learnyousomeerlang.com/distribunomicon#setting-up-an-erlang-cluster .
+
+Beware firewalls blocking connections, including institutional firewalls.
+An ad-hoc wireless network with firewalls disabled could be one work-around, 
+but be careful.
