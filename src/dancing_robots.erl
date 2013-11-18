@@ -18,15 +18,15 @@
   x=round(?FRAME_WIDTH/2), y=round(?FRAME_HEIGHT/2), bearing=0
 }).
 
-uses() -> [beb].
+uses() -> [tob, tob_playout_buffer].
 
 % insert the trigger for the chosen broadcast abstraction here, e.g. beb
 broadcast(Msg) ->
-  stack:trigger({beb, broadcast, {dancerobot, Msg}}).
+  stack:trigger({tob, broadcast, {dancerobot, Msg}}).
 
 % catch any broadcast from the chosen broadcast mechanism
 % change beb to match your choice of broadcast algo
-upon_event({beb, deliver, _Sender, {dancerobot, Msg}}, State) ->
+upon_event({tob_playout_buffer, deliver, _Sender, {dancerobot, Msg}}, State) ->
   io:format("ROBOT DELIVER MSG ~w~n", [Msg]),
   process_broadcast(Msg, State);
 
