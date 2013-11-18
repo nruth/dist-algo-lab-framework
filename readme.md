@@ -1,9 +1,9 @@
 # Erlang Component Framework
 
 This project aims to be a faithful implementation of the component model
-presented in C. Cachin, R. Guerraoui, and L. Rodrigues, Introduction to
+presented in *C. Cachin, R. Guerraoui, and L. Rodrigues, Introduction to
 Reliable and Secure Distributed Programming. Springer-Verlag, Berlin 2nd
-Edition, 2011. That said, this software is not even close to production quality. For more
+Edition, 2011*. That said, this software is not even close to production quality. For more
 developed stacks we suggest [Appia](http://appia.di.fc.ul.pt/) or
 [Kompics](kompics.sics.se).
 
