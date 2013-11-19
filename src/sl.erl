@@ -2,18 +2,12 @@
 -module(sl).
 -behaviour(comp_behav).
 
--export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
+-export([ uses/0, upon_event/2 ]).
 -record(state, {sent}).
 
 -define(RESEND_PERIOD, 2000).
 
 uses() -> [fll].
-
-start_link() ->
-  component:start_link(?MODULE).
-
-stop() ->
-  component:stop(?MODULE).
 
 send(Msg, Destination) ->
   stack:trigger({fll, send, Destination, {sl,Msg}}).

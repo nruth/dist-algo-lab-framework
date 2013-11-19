@@ -1,5 +1,5 @@
 -module(dancing_robots).
--export([ uses/0, upon_event/2, start_link/0, stop/0, start_dance/0, stop_dance/0 ]).
+-export([ uses/0, upon_event/2, start_dance/0, stop_dance/0 ]).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -180,15 +180,6 @@ step_trig(Bearing, Distance) ->
 pick_rand(List) ->
   lists:nth(random:uniform(length(List)), List).
 
-
-
-
-start_link() ->
-  component:start_link(?MODULE).
-
-stop() ->
-  component:stop(?MODULE).
-
 start_dance() ->
   broadcast(start_dance).
 
@@ -209,11 +200,9 @@ start_wx(Robot) ->
 
 % update the gui
 % for use before the dance finishes
-update_onpaint({_WxServer, Frame, Panel}, Robot) ->
-  update_onpaint({_WxServer, Frame, Panel}, Robot, false).
 % update the gui
 % repaint panel with current robot position and pose
-update_onpaint({_WxServer, Frame, Panel}, Robot, DanceCompleted) ->
+update_onpaint({_WxServer, Frame, Panel}, Robot) ->
   OnPaint = fun(_Evt, _Obj) ->
     PaintDC = wxPaintDC:new(Panel),
 
@@ -232,14 +221,6 @@ update_onpaint({_WxServer, Frame, Panel}, Robot, DanceCompleted) ->
       {?FRAME_PADDING, ?FRAME_HEIGHT - ?FRAME_PADDING}, % bottom left
       {?FRAME_PADDING, ?FRAME_PADDING} % top left
     ]),
-
-    %draw FINISHED if it has
-    case DanceCompleted of
-      true ->
-        wxDC:drawText(PaintDC, "FINISHED", {100, 100});
-      false ->
-        ok
-    end,
 
     wxPaintDC:destroy(PaintDC)
   end,

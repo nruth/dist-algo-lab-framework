@@ -1,15 +1,9 @@
 -module(beb).
 -behaviour(comp_behav).
 
--export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
+-export([ uses/0, upon_event/2]).
 
 uses() -> [pl].
-
-start_link() ->
-  component:start_link(?MODULE).
-
-stop() ->
-  component:stop(?MODULE).
 
 upon_event({beb, broadcast, Msg}, State) ->
   %% io:format("beb sending: ~w~n", [Msg]),

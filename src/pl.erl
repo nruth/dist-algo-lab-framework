@@ -2,16 +2,10 @@
 -module(pl).
 -behaviour(comp_behav).
 
--export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
+-export([ uses/0, upon_event/2 ]).
 -record(state, {delivered}).
 
 uses() -> [sl].
-
-start_link() ->
-  component:start_link(?MODULE).
-
-stop() ->
-  component:stop(?MODULE).
 
 upon_event(init, _) ->
   #state{delivered=sets:new()};
@@ -36,7 +30,6 @@ upon_event({sl, deliver, SenderNodeP, WrappedMsg={pl, Id, Msg}}, State) ->
                       sets:add_element(Id, State#state.delivered)
                   end
   };
-
 
 %% upon_event({pl, deliver, SenderNodeQ, Msg}, State) ->
 %%   io:format("pl received message: ~w from ~w~n", [Msg, SenderNodeQ]),

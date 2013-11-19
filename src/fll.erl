@@ -3,7 +3,7 @@
 -module(fll).
 -behaviour(comp_behav).
 
--export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
+-export([ uses/0, upon_event/2 ]).
 
 % upper bound of uniformly sampled delay range (from 0 to MAX_DELAY)
 -define(MAX_DELAY, 2500).
@@ -12,13 +12,6 @@
 
 uses() ->
   [].
-
-
-start_link() ->
-  component:start_link(?MODULE).
-
-stop() ->
-  component:stop(?MODULE).
 
 upon_event(init, _State) ->
   %% Sets a seed for random number generation for the life of the process.
