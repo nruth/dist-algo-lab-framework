@@ -1,4 +1,5 @@
 -module(tob_playout_buffer).
+-behaviour(comp_behav).
 
 -export([ uses/0, upon_event/2, stop/0 ]).
 

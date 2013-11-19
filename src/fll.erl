@@ -1,6 +1,7 @@
 % fair loss link
 % injects random delays and losses into transmission
 -module(fll).
+-behaviour(comp_behav).
 
 -export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
 

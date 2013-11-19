@@ -1,5 +1,6 @@
 % consensus-based total order broadcast
 -module(tob).
+-behaviour(comp_behav).
 
 -export([ uses/0, upon_event/2, stop/0, broadcast/1 ]).
 -record(state, {decided, unordered, delivered, round, wait}).

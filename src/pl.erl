@@ -1,5 +1,7 @@
 % perfect (reliable) link
 -module(pl).
+-behaviour(comp_behav).
+
 -export([ uses/0, upon_event/2, start_link/0, stop/0 ]).
 -record(state, {delivered}).
 

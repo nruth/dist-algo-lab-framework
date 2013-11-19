@@ -1,5 +1,7 @@
 % "perfect" failure detector
 -module(p).
+-behaviour(comp_behav).
+
 -export([ uses/0, upon_event/2, stop/0 ]).
 -record(state, {alive, detected}).
 

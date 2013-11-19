@@ -1,5 +1,7 @@
 % lazy reliable broadcast
 -module(rb).
+-behaviour(comp_behav).
+
 -export([ uses/0, upon_event/2, stop/0 ]).
 -record(state, {correct, from}).
 

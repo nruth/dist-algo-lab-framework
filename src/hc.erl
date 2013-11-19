@@ -1,5 +1,6 @@
 %% hierarchical_consensus
 -module(hc).
+-behaviour(comp_behav).
 
 -export([ uses/0, upon_event/2, stop/0, propose/2 ]).
 -record(state, {
